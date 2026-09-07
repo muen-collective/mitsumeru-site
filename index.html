@@ -84,17 +84,48 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 .dl-btn.visible { opacity: 1; transform: translateY(0); }
 .dl-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
 .dl-btn svg { flex: none; }
-/* Header download button */
-.dl-header-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 18px; border-radius: 999px; font-size: 13px; font-weight: 600;
-  background: var(--primary); color: #fff; border: none; cursor: pointer;
-  text-decoration: none; font-family: var(--sans);
-  transition: filter .15s ease, transform .15s ease;
+
+/* Header */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 18px clamp(24px, 5vw, 80px);
+  display: flex; align-items: center; justify-content: space-between;
 }
-.dl-header-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.brand { display: flex; align-items: baseline; gap: 6px; }
+.brand .name {
+  font-family: var(--sans); font-weight: 700; font-size: 16px;
+  letter-spacing: 0.02em; color: rgba(255,255,255,0.7);
+}
+.brand .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--primary); }
+header a.gh {
+  color: rgba(255,255,255,0.35); text-decoration: none;
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  transition: color .2s;
+}
+header a.gh:hover { color: rgba(255,255,255,0.7); }
+
+/* Sound toggle — header, icon only */
+.sound-toggle {
+  background: none; border: none; cursor: pointer; padding: 4px;
+  color: rgba(255,255,255,0.35); transition: color .2s;
+}
+.sound-toggle:hover { color: rgba(255,255,255,0.7); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor { animation: none; opacity: 1; }
+  .terminal-row { transition: none; }
+  .dl-btn { transition: none; }
+  .modal-overlay { transition: none; }
+}
+.dl-header-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500;
+  background: transparent; color: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.15);
+  cursor: pointer; text-decoration: none; font-family: var(--sans);
+  transition: color .15s, border-color .15s;
+}
+.dl-header-btn:hover { color: rgba(255,255,255,0.75); border-color: rgba(255,255,255,0.35); }
 .dl-header-btn svg { flex: none; }
-/* Modal */
 .modal-overlay {
   display: none; position: fixed; inset: 0; z-index: 200;
   background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
@@ -173,38 +204,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
   color: var(--muted); transition: color .15s, background .15s;
 }
 .modal-close:hover { color: var(--fg); background: rgba(255,255,255,0.1); }
-
-/* Header */
-header {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  padding: 18px clamp(24px, 5vw, 80px);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.brand { display: flex; align-items: baseline; gap: 6px; }
-.brand .name {
-  font-family: var(--sans); font-weight: 700; font-size: 16px;
-  letter-spacing: 0.02em; color: rgba(255,255,255,0.7);
-}
-.brand .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--primary); }
-header a.gh {
-  color: rgba(255,255,255,0.35); text-decoration: none;
-  font-family: var(--sans); font-size: 13px; font-weight: 500;
-  transition: color .2s;
-}
-header a.gh:hover { color: rgba(255,255,255,0.7); }
-
-/* Sound toggle — header, icon only */
-.sound-toggle {
-  background: none; border: none; cursor: pointer; padding: 4px;
-  color: rgba(255,255,255,0.35); transition: color .2s;
-}
-.sound-toggle:hover { color: rgba(255,255,255,0.7); }
-
-@media (prefers-reduced-motion: reduce) {
-  .cursor { animation: none; opacity: 1; }
-  .terminal-row { transition: none; }
-  .dl-btn { transition: none; }
-}
 </style>
 </head>
 <body>
@@ -214,9 +213,9 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
 
 <header>
   <div class="brand"><span class="name">Mitsumeru</span><span class="dot"></span></div>
-  <div style="display:flex;align-items:center;gap:18px;">
-  <button class="dl-header-btn" id="dlHeaderBtn" aria-label="Download Mitsumeru">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+  <div style="display:flex;align-items:center;gap:14px;">
+  <button class="dl-header-btn" id="dlHeaderBtn">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     Download
   </button>
   <a class="gh" href="https://github.com/muen-collective/mitsumeru-desktop" target="_blank" rel="noopener">Source on GitHub</a>
@@ -229,19 +228,14 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
 
 <div class="hero-content">
   <div class="terminal-text" id="terminalText"></div>
-  <div class="dl-group" id="dlGroup">
-  <a class="dl-btn" id="dlBtn" role="button" aria-haspopup="dialog" tabindex="0">
+  <a class="dl-btn" id="dlBtn" href="https://github.com/muen-collective/mitsumeru-desktop/releases/download/0.1.2/mitsumeru-mac-arm64.dmg">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 644" width="20" height="20" aria-hidden="true"><path d="M447.1 336.7C446.9 300 463.5 272.3 497.1 251.9C478.3 225 449.9 210.2 412.4 207.3C376.9 204.5 338.1 228 323.9 228C308.9 228 274.5 208.3 247.5 208.3C191.7 209.2 132.4 252.8 132.4 341.5C132.4 367.7 137.2 394.8 146.8 422.7C159.6 459.4 205.8 549.4 254 547.9C279.2 547.3 297 530 329.8 530C361.6 530 378.1 547.9 406.2 547.9C454.8 547.2 496.6 465.4 508.8 428.6C443.6 397.9 447.1 338.6 447.1 336.7zM390.5 172.5C417.8 140.1 415.3 110.6 414.5 100C390.4 101.4 362.5 116.4 346.6 134.9C329.1 154.7 318.8 179.2 321 206.8C347.1 208.8 370.9 195.4 390.5 172.5z" fill="currentColor"/></svg>
     Download for macOS
   </a>
-  <a class="dl-btn ghost" id="dlIntel" role="button" aria-haspopup="dialog" tabindex="0">Download for macOS (Intel)</a>
-  <a class="dl-btn ghost" id="dlWin" role="button" aria-haspopup="dialog" tabindex="0"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>Download for Windows</a>
-  <div class="dl-note">Unsigned test build &mdash; macOS: right-click &rarr; Open on first launch. Windows: More info &rarr; Run anyway.</div>
-  </div>
 </div>
 
-<div class="modal-overlay" id="dlModal" role="dialog" aria-modal="true" aria-label="Download Mitsumeru">
-<div class="modal-panel" id="modalPanel">
+<div class="modal-overlay" id="dlModal">
+<div class="modal-panel">
   <button class="modal-close" id="modalClose" aria-label="Close">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
@@ -249,7 +243,7 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
     <div class="modal-rec-label">Recommended for this device</div>
     <h2 id="recTitle">&mdash;</h2>
     <p class="file-info"><span id="recFile">&mdash;</span> <span class="file-size" id="recSize"></span></p>
-    <a class="modal-primary-btn" id="recDlBtn" href="#" target="_blank" rel="noopener">
+    <a class="modal-primary-btn" id="recDlBtn" href="#">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       <span id="recBtnLabel">Download</span>
     </a>
@@ -452,123 +446,7 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   }
 
   // Show CTA immediately (always visible)
-  var dlGroup = document.getElementById('dlGroup') || dlBtn;
-  (function () {
-    var ua = navigator.userAgent || '';
-    var os = /Windows/.test(ua) ? 'win' : (/Macintosh|Mac OS X/.test(ua) ? 'mac' : (/Linux|X11/.test(ua) ? 'linux' : 'other'));
-    dlGroup.setAttribute('data-os', os);
-  })();
-  setTimeout(function () { dlGroup.classList.add('visible'); }, 1200);
-
-  // ─── DOWNLOAD MODAL ───
-  var PLATFORMS = [
-    { id:'mac-arm',    title:'macOS Apple Silicon DMG', re:/mac.*arm64.*\.dmg$/i,     icon:'apple', label:'Download for macOS' },
-    { id:'mac-x64',    title:'macOS Intel DMG',         re:/mac.*x64.*\.dmg$/i,      icon:'apple', label:'Download for macOS (Intel)' },
-    { id:'mac-arm-z',  title:'macOS Apple Silicon ZIP', re:/mac.*arm64.*\.zip$/i,    icon:'apple', label:'Download for macOS (Apple Silicon ZIP)' },
-    { id:'mac-x64-z',  title:'macOS Intel ZIP',         re:/mac.*x64.*\.zip$/i,      icon:'apple', label:'Download for macOS (Intel ZIP)' },
-    { id:'win',        title:'Windows x64 installer',   re:/windows.*x64.*\.exe$/i,  icon:'win',   label:'Download for Windows' },
-    { id:'linux-arm-a',title:'Linux arm64 AppImage',    re:/linux.*arm64.*appimage/i, icon:'linux', label:'Download for Linux (arm64 AppImage)' },
-    { id:'linux-x-a',  title:'Linux x64 AppImage',      re:/linux.*x64.*appimage$/i, icon:'linux', label:'Download for Linux (x64 AppImage)' },
-    { id:'linux-arm-d',title:'Linux arm64 deb',          re:/linux.*arm64.*\.deb$/i,  icon:'linux', label:'Download for Linux (arm64 deb)' },
-    { id:'linux-x-d',  title:'Linux x64 deb',            re:/linux.*x64.*\.deb$/i,    icon:'linux', label:'Download for Linux (x64 deb)' }
-  ];
-  var MAC_RE = /mac.*arm64.*\.dmg$/i;
-  var WIN_RE = /windows.*x64.*\.exe$/i;
-  var ICONS = {
-    apple: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18.7 10.7c-.1-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.7-.8-2.8-.7-1.4.1-2.8.8-3.5 2.1-1.5 2.5-.4 6.2 1.1 8.3.7 1 1.6 2.1 2.7 2.1 1.1-.1 1.5-.7 2.8-.7 1.3 0 1.6.7 2.8.7 1.1 0 1.9-1 2.6-2 .8-1.1 1.1-2.2 1.1-2.3 0-.1-2.1-.8-2.1-3.3zM16.3 4.6c.6-.7 1-1.7.9-2.7-.8 0-1.9.6-2.5 1.3-.6.6-1.1 1.7-.9 2.7 1 .1 1.9-.5 2.5-1.3z"/></svg>',
-    win:   '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>',
-    linux: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8 2 4 4 4 8c0 2 1 4 3 5v3a2 2 0 002 2h6a2 2 0 002-2v-3c2-1 3-3 3-5 0-4-4-6-8-6z"/><path d="M9 11h.01M15 11h.01"/></svg>'
-  };
-  var DL_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
-  var OVERLAY = document.getElementById('dlModal');
-  var ROWS    = document.getElementById('modalRows');
-  var RELEASE = null;
-  function detectOS() {
-    var ua = navigator.userAgent || '';
-    if (/Windows/.test(ua)) return 'win';
-    if (/Macintosh|Mac OS X/.test(ua)) return 'mac';
-    if (/Linux|X11/.test(ua)) return 'linux';
-    return 'other';
-  }
-  function findAsset(assets, re) {
-    for (var i = 0; i < assets.length; i++) { if (re.test(assets[i].name)) return assets[i]; }
-    return null;
-  }
-  function fmtBytes(n) {
-    if (!n) return '';
-    if (n > 1e9) return (n/1e9).toFixed(1).replace(/\.0$/,'') + ' GB';
-    if (n > 1e6) return (n/1e6).toFixed(0) + ' MB';
-    return (n/1e3).toFixed(0) + ' KB';
-  }
-  function openModal() {
-    OVERLAY.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    if (RELEASE) buildModal(RELEASE);
-  }
-  function closeModal() {
-    OVERLAY.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-  function buildModal(rel) {
-    var assets = rel.assets || [];
-    var os = detectOS();
-    var recRe = (os === 'win') ? WIN_RE : MAC_RE;
-    var recAsset = findAsset(assets, recRe);
-    var recPlat = PLATFORMS.find(function(p){ return p.re === recRe; });
-    var recPanel = document.getElementById('modalRec');
-    if (recAsset && recPlat) {
-      recPanel.classList.remove('hidden');
-      document.getElementById('recTitle').textContent = recPlat.title;
-      document.getElementById('recFile').textContent = recAsset.name;
-      document.getElementById('recSize').textContent = fmtBytes(recAsset.size);
-      var btn = document.getElementById('recDlBtn');
-      btn.href = recAsset.browser_download_url;
-      document.getElementById('recBtnLabel').textContent = recPlat.label;
-      var hash = (recAsset.digest || '').replace('sha256:', '');
-      document.getElementById('recHash').textContent = hash.slice(0,16) + (hash.length > 16 ? '...' : '');
-      btn._hash = hash;
-    } else { recPanel.classList.add('hidden'); }
-    ROWS.innerHTML = '';
-    PLATFORMS.forEach(function(p) {
-      var a = findAsset(assets, p.re);
-      if (!a) return;
-      if (recAsset && p.re === recRe) return;
-      var row = document.createElement('a');
-      row.className = 'modal-row';
-      row.href = a.browser_download_url;
-      row.target = '_blank'; row.rel = 'noopener';
-      row.innerHTML = '<span class="row-icon">' + ICONS[p.icon] + '</span>' +
-        '<span class="row-text"><span class="row-title">' + p.title + '</span>' +
-        '<span class="row-file">' + a.name + '</span></span>' +
-        '<span class="row-dl">' + DL_ICON + '</span>';
-      ROWS.appendChild(row);
-    });
-  }
-  OVERLAY.addEventListener('click', function(e) { if (e.target === OVERLAY) closeModal(); });
-  document.getElementById('modalClose').addEventListener('click', closeModal);
-  document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && OVERLAY.classList.contains('open')) closeModal(); });
-  document.getElementById('copyHash').addEventListener('click', function() {
-    var btn = this; var hash = document.getElementById('recDlBtn')._hash || '';
-    if (!hash) return;
-    navigator.clipboard.writeText(hash).then(function() {
-      btn.textContent = 'Copied'; btn.classList.add('copied');
-      setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-    });
-  });
-  document.getElementById('dlHeaderBtn').addEventListener('click', openModal);
-  ['dlBtn','dlIntel','dlWin'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.addEventListener('click', function(e) { e.preventDefault(); openModal(); });
-  });
-  // fetch release data for modal
-  (async function () {
-    try {
-      var r = await fetch('https://api.github.com/repos/muen-collective/mitsumeru-desktop/releases?per_page=1', { headers: { accept: 'application/vnd.github+json' } });
-      if (!r.ok) return;
-      var rels = await r.json();
-      RELEASE = rels[0];
-    } catch (e) {}
-  })();
+  setTimeout(function () { dlBtn.classList.add('visible'); }, 1200);
 
   // Auto-enable typewriter clicks on first user interaction
   var soundActivated = false;
@@ -683,6 +561,65 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
     }
     ctx.fill();
   }
+
+  // ─── DOWNLOAD MODAL ───
+  var PLATFORMS = [
+    { title:'macOS Apple Silicon DMG', re:/mac.*arm64.*\.dmg$/i,     icon:'apple' },
+    { title:'macOS Intel DMG',         re:/mac.*x64.*\.dmg$/i,      icon:'apple' },
+    { title:'macOS Apple Silicon ZIP', re:/mac.*arm64.*\.zip$/i,    icon:'apple' },
+    { title:'macOS Intel ZIP',         re:/mac.*x64.*\.zip$/i,      icon:'apple' },
+    { title:'Windows x64 installer',   re:/windows.*x64.*\.exe$/i,  icon:'win'   },
+    { title:'Linux arm64 AppImage',    re:/linux.*arm64.*appimage/i, icon:'linux' },
+    { title:'Linux x64 AppImage',      re:/linux.*x64.*appimage$/i, icon:'linux' },
+    { title:'Linux arm64 deb',          re:/linux.*arm64.*\.deb$/i,  icon:'linux' },
+    { title:'Linux x64 deb',            re:/linux.*x64.*\.deb$/i,    icon:'linux' }
+  ];
+  var MAC_RE = /mac.*arm64.*\.dmg$/i, WIN_RE = /windows.*x64.*\.exe$/i;
+  var ICONS = {
+    apple: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18.7 10.7c-.1-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.7-.8-2.8-.7-1.4.1-2.8.8-3.5 2.1-1.5 2.5-.4 6.2 1.1 8.3.7 1 1.6 2.1 2.7 2.1 1.1-.1 1.5-.7 2.8-.7 1.3 0 1.6.7 2.8.7 1.1 0 1.9-1 2.6-2 .8-1.1 1.1-2.2 1.1-2.3 0-.1-2.1-.8-2.1-3.3zM16.3 4.6c.6-.7 1-1.7.9-2.7-.8 0-1.9.6-2.5 1.3-.6.6-1.1 1.7-.9 2.7 1 .1 1.9-.5 2.5-1.3z"/></svg>',
+    win: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>',
+    linux: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8 2 4 4 4 8c0 2 1 4 3 5v3a2 2 0 002 2h6a2 2 0 002-2v-3c2-1 3-3 3-5 0-4-4-6-8-6z"/><path d="M9 11h.01M15 11h.01"/></svg>'
+  };
+  var DL_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  var OVERLAY = document.getElementById('dlModal'), ROWS = document.getElementById('modalRows'), RELEASE = null;
+  function detectOS() {
+    var ua = navigator.userAgent || '';
+    if (/Windows/.test(ua)) return 'win'; if (/Macintosh|Mac OS X/.test(ua)) return 'mac'; if (/Linux|X11/.test(ua)) return 'linux'; return 'other';
+  }
+  function findAsset(a, re) { for (var i=0;i<a.length;i++) if (re.test(a[i].name)) return a[i]; return null; }
+  function fmtBytes(n) { if (!n) return ''; if (n>1e9) return (n/1e9).toFixed(1).replace(/\.0$/,'')+' GB'; if (n>1e6) return (n/1e6).toFixed(0)+' MB'; return (n/1e3).toFixed(0)+' KB'; }
+  function openModal() { OVERLAY.classList.add('open'); document.body.style.overflow='hidden'; if (RELEASE) buildModal(RELEASE); }
+  function closeModal() { OVERLAY.classList.remove('open'); document.body.style.overflow=''; }
+  function buildModal(rel) {
+    var assets=rel.assets||[], os=detectOS(), recRe=(os==='win')?WIN_RE:MAC_RE, rec=findAsset(assets,recRe);
+    var rp=document.getElementById('modalRec');
+    if (rec) {
+      rp.classList.remove('hidden');
+      document.getElementById('recTitle').textContent=PLATFORMS.find(function(p){return p.re===recRe}).title;
+      document.getElementById('recFile').textContent=rec.name;
+      document.getElementById('recSize').textContent=fmtBytes(rec.size);
+      var btn=document.getElementById('recDlBtn'); btn.href=rec.browser_download_url;
+      btn._hash=(rec.digest||'').replace('sha256:','');
+      var h=btn._hash;
+      document.getElementById('recHash').textContent=h.slice(0,16)+(h.length>16?'...':'');
+    } else rp.classList.add('hidden');
+    ROWS.innerHTML='';
+    PLATFORMS.forEach(function(p) {
+      var a=findAsset(assets,p.re); if (!a) return; if (rec&&p.re===recRe) return;
+      var r=document.createElement('a'); r.className='modal-row'; r.href=a.browser_download_url;
+      r.innerHTML='<span class="row-icon">'+ICONS[p.icon]+'</span><span class="row-text"><span class="row-title">'+p.title+'</span><span class="row-file">'+a.name+'</span></span><span class="row-dl">'+DL_ICON+'</span>';
+      ROWS.appendChild(r);
+    });
+  }
+  OVERLAY.addEventListener('click',function(e){if(e.target===OVERLAY)closeModal();});
+  document.getElementById('modalClose').addEventListener('click',closeModal);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&OVERLAY.classList.contains('open'))closeModal();});
+  document.getElementById('dlHeaderBtn').addEventListener('click',openModal);
+  document.getElementById('copyHash').addEventListener('click',function(){
+    var btn=this,h=document.getElementById('recDlBtn')._hash||'';if(!h)return;
+    navigator.clipboard.writeText(h).then(function(){btn.textContent='Copied';btn.classList.add('copied');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('copied');},2000);});
+  });
+  (async function(){try{var r=await fetch('https://api.github.com/repos/muen-collective/mitsumeru-desktop/releases?per_page=1',{headers:{accept:'application/vnd.github+json'}});if(!r.ok)return;RELEASE=(await r.json())[0];}catch(e){}})();
 })();
 </script>
 </body>
