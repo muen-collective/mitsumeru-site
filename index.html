@@ -477,27 +477,12 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
       var r = await fetch('https://api.github.com/repos/muen-collective/mitsumeru-desktop/releases?per_page=1', { headers: { accept: 'application/vnd.github+json' } });
       if (!r.ok) return;
       var rels = await r.json();
-      var a = rels[0] && rels[0].assets && rels[0].assets.find(function (a) { return a.name === 'mitsumeru-mac-arm64.dmg'; });
+      var a = rels[0] && rels[0].assets && rels[0].assets.find(function (a) { return /mac.*arm64.*\.dmg$/i.test(a.name); });
       if (a) dlBtn.href = a.browser_download_url;
 
-  // Update hero CTA for OS
-  (function() {
-    var ua = navigator.userAgent || '';
-    var btn = document.getElementById('dlBtn');
-    var base = 'https://github.com/muen-collective/mitsumeru-desktop/releases/download/dev-20260907-0030/';
-    if (/Windows/.test(ua)) {
-      btn.href = base + 'mitsumeru-dev-windows-x64-setup.exe';
-      btn.querySelector('svg').outerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>';
-      btn.lastChild.textContent = 'Download for Windows';
-    } else if (/Macintosh|Mac OS X/.test(ua)) {
-      // arm64 DMG is the default static href, check arch
-      if (/Intel|x86/.test(ua) || navigator.platform === 'MacIntel' && navigator.maxTouchPoints !== 2) {
-        btn.href = base + 'mitsumeru-dev-mac-x64.dmg';
-        btn.lastChild.textContent = 'Download for macOS (Intel)';
-      }
-      // else: already set to arm64 DMG by default
-    }
-  })();
+  // Update hero CTA for OS — v0.0.1 is macOS ARM64 only
+  // Windows/Intel overrides removed: no production builds for those platforms yet
+  // The static href already points to the correct v0.0.1 ARM64 DMG
     } catch (e) {}
   })();
 
