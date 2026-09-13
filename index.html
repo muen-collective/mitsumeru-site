@@ -243,7 +243,7 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
     <div class="modal-rec-label">Recommended for this device</div>
     <h2 id="recTitle">&mdash;</h2>
     <p class="file-info"><span id="recFile">&mdash;</span> <span class="file-size" id="recSize"></span></p>
-    <a class="modal-primary-btn" id="recDlBtn" href="#">
+    <a class="modal-primary-btn" id="recDlBtn" href="https://github.com/muen-collective/mitsumeru/releases/download/v0.1.8-dev/Mitsumeru-0.1.8-dev-arm64.dmg">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       <span id="recBtnLabel">Download</span>
     </a>
@@ -583,7 +583,12 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
     { title:'Linux arm64 deb',          re:/linux.*arm64.*\.deb$/i,  icon:'linux' },
     { title:'Linux x64 deb',            re:/linux.*x64.*\.deb$/i,    icon:'linux' }
   ];
-  var MAC_RE = /arm64\.dmg$/i, WIN_RE = /windows.*x64.*\.exe$/i;
+  // NOTE: MAC_RE and WIN_RE are REFERENCES to entries in PLATFORMS, not separate
+  // literals. buildModal matches the recommended row back to its table entry with
+  // `p.re === recRe` — a reference comparison. Two regex literals with identical
+  // source are still distinct objects, so writing them out again here makes that
+  // lookup return undefined and throws on `.title`, leaving the modal half-built.
+  var MAC_RE = PLATFORMS[0].re, WIN_RE = PLATFORMS[4].re;
   var ICONS = {
     apple: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18.7 10.7c-.1-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.7-.8-2.8-.7-1.4.1-2.8.8-3.5 2.1-1.5 2.5-.4 6.2 1.1 8.3.7 1 1.6 2.1 2.7 2.1 1.1-.1 1.5-.7 2.8-.7 1.3 0 1.6.7 2.8.7 1.1 0 1.9-1 2.6-2 .8-1.1 1.1-2.2 1.1-2.3 0-.1-2.1-.8-2.1-3.3zM16.3 4.6c.6-.7 1-1.7.9-2.7-.8 0-1.9.6-2.5 1.3-.6.6-1.1 1.7-.9 2.7 1 .1 1.9-.5 2.5-1.3z"/></svg>',
     win: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>',
@@ -597,7 +602,25 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   }
   function findAsset(a, re) { for (var i=0;i<a.length;i++) if (re.test(a[i].name)) return a[i]; return null; }
   function fmtBytes(n) { if (!n) return ''; if (n>1e9) return (n/1e9).toFixed(1).replace(/\.0$/,'')+' GB'; if (n>1e6) return (n/1e6).toFixed(0)+' MB'; return (n/1e3).toFixed(0)+' KB'; }
-  function openModal() { OVERLAY.classList.add('open'); document.body.style.overflow='hidden'; if (RELEASES.length) buildModal(RELEASES); }
+  function openModal() {
+    OVERLAY.classList.add('open'); document.body.style.overflow='hidden';
+    if (RELEASES.length) buildModal(RELEASES); else buildFallback();
+  }
+  // The GitHub API can fail: offline, rate-limited (60 req/h per IP, and the
+  // page spends two on load), or blocked. Without this the modal opened with
+  // every field still showing the "—" placeholder and the Download button
+  // pointing at "#". The hero CTA already carries a known-good URL, so degrade
+  // to it instead of presenting an empty panel.
+  function buildFallback() {
+    var href=document.getElementById('dlBtn').href;
+    document.getElementById('modalRec').classList.remove('hidden');
+    document.getElementById('recTitle').textContent='macOS Apple Silicon DMG';
+    document.getElementById('recFile').textContent=href.split('/').pop();
+    document.getElementById('recSize').textContent='';
+    document.getElementById('recHash').textContent='—';
+    document.getElementById('recDlBtn').href=href;
+    ROWS.innerHTML=''; VSEC.style.display='none';
+  }
   function closeModal() { OVERLAY.classList.remove('open'); document.body.style.overflow=''; }
   function buildModal(rels) {
     var latest=rels[0];
