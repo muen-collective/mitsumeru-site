@@ -471,18 +471,24 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   // Start agent loop after a brief pause
   setTimeout(runLoop, 800);
 
-  // Dynamic download link
+  // Dynamic download link — detect OS and serve the right asset
   (async function () {
     try {
+      var ua = navigator.userAgent || '';
+      var isWin = /Windows/.test(ua);
+      var isMac = /Macintosh|Mac OS X/.test(ua);
+      var isIntel = isMac && !/Mac OS X 1[0-9_]/.test(ua) && !/ARM/.test(ua);
+      // Match patterns: Windows → .exe, Mac Intel → x64.dmg, Mac ARM → arm64.dmg, fallback → arm64.dmg
+      var pattern = isWin ? /\.exe$/i : (isIntel ? /x64.*\.dmg$/i : /arm64\.dmg$/i);
+      var label = isWin ? 'Download for Windows' : 'Download for macOS';
       var r = await fetch('https://api.github.com/repos/muen-collective/mitsumeru/releases?per_page=1', { headers: { accept: 'application/vnd.github+json' } });
       if (!r.ok) return;
       var rels = await r.json();
-      var a = rels[0] && rels[0].assets && rels[0].assets.find(function (a) { return /arm64\.dmg$/i.test(a.name); });
-      if (a) dlBtn.href = a.browser_download_url;
-
-  // Update hero CTA for OS — the app ships macOS ARM64 only
-  // Windows/Intel overrides removed: no production builds for those platforms yet
-  // The static href is the fallback for when this fetch fails (offline, rate-limited)
+      var a = rels[0] && rels[0].assets && rels[0].assets.find(function (a) { return pattern.test(a.name); });
+      if (a) {
+        dlBtn.href = a.browser_download_url;
+        dlBtn.lastChild.textContent = '\n    ' + label + '\n  ';
+      }
     } catch (e) {}
   })();
 
@@ -613,8 +619,10 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   // to it instead of presenting an empty panel.
   function buildFallback() {
     var href=document.getElementById('dlBtn').href;
+    var os=detectOS();
+    var title=(os==='win')?'Windows x64 installer':'macOS Apple Silicon DMG';
     document.getElementById('modalRec').classList.remove('hidden');
-    document.getElementById('recTitle').textContent='macOS Apple Silicon DMG';
+    document.getElementById('recTitle').textContent=title;
     document.getElementById('recFile').textContent=href.split('/').pop();
     document.getElementById('recSize').textContent='';
     document.getElementById('recHash').textContent='—';
