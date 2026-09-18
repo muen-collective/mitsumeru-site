@@ -218,7 +218,7 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     Download
   </button>
-  <a class="gh" href="https://github.com/muen-collective/mitsumeru" target="_blank" rel="noopener">Source on GitHub</a>
+  <a class="gh" href="https://github.com/muen-collective/mitsumeru-app" target="_blank" rel="noopener">Source on GitHub</a>
   </div>
   <button class="sound-toggle" id="soundToggle" aria-label="Toggle sound" title="Toggle sound">
     <svg class="icon-sound-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
@@ -228,7 +228,7 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
 
 <div class="hero-content">
   <div class="terminal-text" id="terminalText"></div>
-  <a class="dl-btn" id="dlBtn" href="https://github.com/muen-collective/mitsumeru/releases/download/v0.1.9-dev/Mitsumeru-0.1.9-dev-arm64.dmg">
+  <a class="dl-btn" id="dlBtn" href="https://github.com/muen-collective/mitsumeru-app/releases/download/v0.2.0/Mitsumeru-0.2.0-arm64.dmg">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 644" width="20" height="20" aria-hidden="true"><path d="M447.1 336.7C446.9 300 463.5 272.3 497.1 251.9C478.3 225 449.9 210.2 412.4 207.3C376.9 204.5 338.1 228 323.9 228C308.9 228 274.5 208.3 247.5 208.3C191.7 209.2 132.4 252.8 132.4 341.5C132.4 367.7 137.2 394.8 146.8 422.7C159.6 459.4 205.8 549.4 254 547.9C279.2 547.3 297 530 329.8 530C361.6 530 378.1 547.9 406.2 547.9C454.8 547.2 496.6 465.4 508.8 428.6C443.6 397.9 447.1 338.6 447.1 336.7zM390.5 172.5C417.8 140.1 415.3 110.6 414.5 100C390.4 101.4 362.5 116.4 346.6 134.9C329.1 154.7 318.8 179.2 321 206.8C347.1 208.8 370.9 195.4 390.5 172.5z" fill="currentColor"/></svg>
     Download for macOS
   </a>
@@ -243,7 +243,7 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
     <div class="modal-rec-label">Recommended for this device</div>
     <h2 id="recTitle">&mdash;</h2>
     <p class="file-info"><span id="recFile">&mdash;</span> <span class="file-size" id="recSize"></span></p>
-    <a class="modal-primary-btn" id="recDlBtn" href="https://github.com/muen-collective/mitsumeru/releases/download/v0.1.9-dev/Mitsumeru-0.1.9-dev-arm64.dmg">
+    <a class="modal-primary-btn" id="recDlBtn" href="https://github.com/muen-collective/mitsumeru-app/releases/download/v0.2.0/Mitsumeru-0.2.0-arm64.dmg">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       <span id="recBtnLabel">Download</span>
     </a>
@@ -471,23 +471,20 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   // Start agent loop after a brief pause
   setTimeout(runLoop, 800);
 
-  // Dynamic download link — detect OS and serve the right asset
+  // Dynamic download link — macOS Apple Silicon is the only target we ship.
+  // Intel and Windows cannot build until prepare-harness.sh stages the harness per
+  // platform (every target carries darwin-arm64 native addons today), so this must
+  // not pretend to offer them: the old code looked for an .exe or an x64 dmg that
+  // this version does not have, then silently left a stale macOS link in place.
   (async function () {
     try {
-      var ua = navigator.userAgent || '';
-      var isWin = /Windows/.test(ua);
-      var isMac = /Macintosh|Mac OS X/.test(ua);
-      var isIntel = isMac && !/Mac OS X 1[0-9_]/.test(ua) && !/ARM/.test(ua);
-      // Match patterns: Windows → .exe, Mac Intel → x64.dmg, Mac ARM → arm64.dmg, fallback → arm64.dmg
-      var pattern = isWin ? /\.exe$/i : (isIntel ? /x64.*\.dmg$/i : /arm64\.dmg$/i);
-      var label = isWin ? 'Download for Windows' : 'Download for macOS';
-      var r = await fetch('https://api.github.com/repos/muen-collective/mitsumeru/releases?per_page=1', { headers: { accept: 'application/vnd.github+json' } });
+      var r = await fetch('https://api.github.com/repos/muen-collective/mitsumeru-app/releases?per_page=1', { headers: { accept: 'application/vnd.github+json' } });
       if (!r.ok) return;
       var rels = await r.json();
-      var a = rels[0] && rels[0].assets && rels[0].assets.find(function (a) { return pattern.test(a.name); });
+      var a = rels[0] && rels[0].assets && rels[0].assets.find(function (a) { return /arm64\.dmg$/i.test(a.name); });
       if (a) {
         dlBtn.href = a.browser_download_url;
-        dlBtn.lastChild.textContent = '\n    ' + label + '\n  ';
+        dlBtn.lastChild.textContent = '\n    Download for macOS\n  ';
       }
     } catch (e) {}
   })();
@@ -578,23 +575,26 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   }
 
   // ─── DOWNLOAD MODAL ───
+  // Intel and Windows rows are deliberately absent. Those targets cannot build
+  // until the harness staging is per-platform, and a row whose regex matches no
+  // asset never renders anyway — but leaving it in the table says "supported, just
+  // not this release", which is not true.
   var PLATFORMS = [
     { title:'macOS Apple Silicon DMG', re:/arm64\.dmg$/i,             icon:'apple' },
-    { title:'macOS Intel DMG',         re:/(x64|intel).*\.dmg$/i,     icon:'apple' },
     { title:'macOS Apple Silicon ZIP', re:/arm64.*\.zip$/i,          icon:'apple' },
-    { title:'macOS Intel ZIP',         re:/(x64|intel).*\.zip$/i,     icon:'apple' },
-    { title:'Windows x64 installer',   re:/windows.*x64.*\.exe$/i,  icon:'win'   },
     { title:'Linux arm64 AppImage',    re:/linux.*arm64.*appimage/i, icon:'linux' },
     { title:'Linux x64 AppImage',      re:/linux.*x64.*appimage$/i, icon:'linux' },
     { title:'Linux arm64 deb',          re:/linux.*arm64.*\.deb$/i,  icon:'linux' },
     { title:'Linux x64 deb',            re:/linux.*x64.*\.deb$/i,    icon:'linux' }
   ];
-  // NOTE: MAC_RE and WIN_RE are REFERENCES to entries in PLATFORMS, not separate
-  // literals. buildModal matches the recommended row back to its table entry with
+  // NOTE: MAC_RE is a REFERENCE to a PLATFORMS entry, not a separate literal.
+  // buildModal matches the recommended row back to its table entry with
   // `p.re === recRe` — a reference comparison. Two regex literals with identical
   // source are still distinct objects, so writing them out again here makes that
   // lookup return undefined and throws on `.title`, leaving the modal half-built.
-  var MAC_RE = PLATFORMS[0].re, WIN_RE = PLATFORMS[4].re;
+  // WIN_RE is gone with the Windows row; the old `PLATFORMS[4]` index was itself a
+  // trap, since removing or reordering a row silently repointed it at another platform.
+  var MAC_RE = PLATFORMS[0].re;
   var ICONS = {
     apple: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18.7 10.7c-.1-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.7-.8-2.8-.7-1.4.1-2.8.8-3.5 2.1-1.5 2.5-.4 6.2 1.1 8.3.7 1 1.6 2.1 2.7 2.1 1.1-.1 1.5-.7 2.8-.7 1.3 0 1.6.7 2.8.7 1.1 0 1.9-1 2.6-2 .8-1.1 1.1-2.2 1.1-2.3 0-.1-2.1-.8-2.1-3.3zM16.3 4.6c.6-.7 1-1.7.9-2.7-.8 0-1.9.6-2.5 1.3-.6.6-1.1 1.7-.9 2.7 1 .1 1.9-.5 2.5-1.3z"/></svg>',
     win: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>',
@@ -602,10 +602,6 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   };
   var DL_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
   var OVERLAY = document.getElementById('dlModal'), ROWS = document.getElementById('modalRows'), VROWS = document.getElementById('modalVersionRows'), VSEC = document.getElementById('modalVersions'), RELEASES = [], RELEASE = null;
-  function detectOS() {
-    var ua = navigator.userAgent || '';
-    if (/Windows/.test(ua)) return 'win'; if (/Macintosh|Mac OS X/.test(ua)) return 'mac'; if (/Linux|X11/.test(ua)) return 'linux'; return 'other';
-  }
   function findAsset(a, re) { for (var i=0;i<a.length;i++) if (re.test(a[i].name)) return a[i]; return null; }
   function fmtBytes(n) { if (!n) return ''; if (n>1e9) return (n/1e9).toFixed(1).replace(/\.0$/,'')+' GB'; if (n>1e6) return (n/1e6).toFixed(0)+' MB'; return (n/1e3).toFixed(0)+' KB'; }
   function openModal() {
@@ -619,8 +615,9 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   // to it instead of presenting an empty panel.
   function buildFallback() {
     var href=document.getElementById('dlBtn').href;
-    var os=detectOS();
-    var title=(os==='win')?'Windows x64 installer':'macOS Apple Silicon DMG';
+    // One artifact, one title: the hero href is the Apple Silicon dmg whatever the
+    // visitor is running, so naming their OS here would misdescribe the file.
+    var title='macOS Apple Silicon DMG';
     document.getElementById('modalRec').classList.remove('hidden');
     document.getElementById('recTitle').textContent=title;
     document.getElementById('recFile').textContent=href.split('/').pop();
@@ -633,7 +630,7 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   function buildModal(rels) {
     var latest=rels[0];
     if (!latest) return;
-    var assets=latest.assets||[], os=detectOS(), recRe=(os==='win')?WIN_RE:MAC_RE, rec=findAsset(assets,recRe);
+    var assets=latest.assets||[], recRe=MAC_RE, rec=findAsset(assets,recRe);
     var rp=document.getElementById('modalRec');
     if (rec) {
       rp.classList.remove('hidden');
@@ -684,7 +681,7 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
     var btn=this,h=document.getElementById('recDlBtn')._hash||'';if(!h)return;
     navigator.clipboard.writeText(h).then(function(){btn.textContent='Copied';btn.classList.add('copied');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('copied');},2000);});
   });
-  (async function(){try{var r=await fetch('https://api.github.com/repos/muen-collective/mitsumeru/releases?per_page=5',{headers:{accept:'application/vnd.github+json'}});if(!r.ok)return;RELEASES=await r.json(); RELEASE=RELEASES[0];}catch(e){}})();
+  (async function(){try{var r=await fetch('https://api.github.com/repos/muen-collective/mitsumeru-app/releases?per_page=5',{headers:{accept:'application/vnd.github+json'}});if(!r.ok)return;RELEASES=await r.json(); RELEASE=RELEASES[0];}catch(e){}})();
 })();
 </script>
 </body>

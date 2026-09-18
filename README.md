@@ -6,9 +6,17 @@ The Mitsumeru Desktop download page — a single-page static site.
 - `icon-512.png` — app icon used in the hero and as favicon
 
 Download links point at the release assets of
-[`muen-collective/mitsumeru`](https://github.com/muen-collective/mitsumeru/releases) — the app
-repo. (`mitsumeru-desktop` was the earlier fork-based lineage and is archived; do not point
-links at it.)
+[`muen-collective/mitsumeru-app`](https://github.com/muen-collective/mitsumeru-app/releases) — the
+app repo. Two names to avoid: `mitsumeru-desktop` was the earlier fork-based lineage and is
+archived, and the app repo itself was renamed from `mitsumeru` to `mitsumeru-app`. Use the
+canonical name rather than leaning on GitHub's redirect — the old name only works while the
+redirect lasts.
+
+**The site offers macOS Apple Silicon only.** Intel (x64) and Windows rows were removed from
+`PLATFORMS`, and the hero no longer branches on `navigator.userAgent`: 0.2.0 and earlier cannot
+build those targets because `prepare-harness.sh` stages the host closure, so every target carries
+`darwin-arm64` native addons and would fail to boot. Do not add the rows back until the app
+actually publishes those assets — a row whose regex matches no asset silently renders nothing.
 
 `index.html` resolves the current release from the GitHub API at load time, so new versions are
 picked up without an edit. The `href` on the hero CTA is a **fallback** for when that fetch
