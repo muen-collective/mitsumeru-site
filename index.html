@@ -471,17 +471,38 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   // Start agent loop after a brief pause
   setTimeout(runLoop, 800);
 
-  // Dynamic download link — macOS Apple Silicon is the only target we ship.
-  // Intel and Windows cannot build until prepare-harness.sh stages the harness per
-  // platform (every target carries darwin-arm64 native addons today), so this must
-  // not pretend to offer them: the old code looked for an .exe or an x64 dmg that
-  // this version does not have, then silently left a stale macOS link in place.
+  // Dynamic download link — and it now has to CHOOSE between two macOS builds.
+  // It used to have only one to choose from: Intel and Windows could not build
+  // until prepare-harness.sh staged the harness per platform, because every target
+  // carried Apple Silicon native addons. 0.2.2 fixed that, so the choice is real.
+  //
+  // The architecture comes from UA Client Hints, which only Chromium exposes and
+  // only asynchronously. Safari cannot be asked at all — it reports "MacIntel" on
+  // Apple Silicon too — so a visitor we cannot classify gets the Apple Silicon
+  // build, and the modal lists the Intel one beside it. The failure mode is
+  // "one click away", never a silently wrong file.
+  //
+  // The regexes and PLATFORMS live further down this script; that is fine because
+  // this function resumes after its first await, by which point they are
+  // initialized.
+  var HOST_IS_INTEL = false;
   (async function () {
+    try {
+      if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+        var hv = await navigator.userAgentData.getHighEntropyValues(['architecture']);
+        HOST_IS_INTEL = /x86/i.test(hv.architecture || '');
+      }
+    } catch (e) {}
     try {
       var r = await fetch('https://api.github.com/repos/muen-collective/mitsumeru-app/releases?per_page=1', { headers: { accept: 'application/vnd.github+json' } });
       if (!r.ok) return;
       var rels = await r.json();
-      var a = rels[0] && rels[0].assets && rels[0].assets.find(function (a) { return /arm64\.dmg$/i.test(a.name); });
+      var assets = (rels[0] && rels[0].assets) || [];
+      // The Intel build when we know the visitor is on Intel, and the Apple
+      // Silicon build otherwise — including when the release predates Intel
+      // support, which is why the second lookup is the fallback rather than a
+      // hard requirement.
+      var a = findAsset(assets, HOST_IS_INTEL ? INTEL_DMG_RE : ARM_DMG_RE) || findAsset(assets, ARM_DMG_RE);
       if (a) {
         dlBtn.href = a.browser_download_url;
         dlBtn.lastChild.textContent = '\n    Download for macOS\n  ';
@@ -575,26 +596,39 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   }
 
   // ─── DOWNLOAD MODAL ───
-  // Intel and Windows rows are deliberately absent. Those targets cannot build
-  // until the harness staging is per-platform, and a row whose regex matches no
-  // asset never renders anyway — but leaving it in the table says "supported, just
-  // not this release", which is not true.
+  // macOS ships two builds as of 0.2.2, so the table names both and the visitor
+  // chooses; the recommended row follows the detected architecture (see the hero
+  // CTA above). Windows is still absent on purpose — its installer is unsigned,
+  // and a public "Download for Windows" button that triggers SmartScreen is a
+  // worse first impression than no button. Add the row when it is signed.
+  //
+  // The arm64 and Intel patterns must not overlap: the Intel dmg is
+  // Mitsumeru-<version>.dmg and the Apple Silicon one is
+  // Mitsumeru-<version>-arm64.dmg, so the Intel pattern is anchored and excludes
+  // the -arm64 token. (An asset-name regex written from memory is a fragile thing
+  // — check it against a real release.)
+  var ARM_DMG_RE = /arm64\.dmg$/i;
+  var INTEL_DMG_RE = /^Mitsumeru-[\d.]+\.dmg$/i;
+  var INTEL_ZIP_RE = /^Mitsumeru-[\d.]+-mac\.zip$/i;
   var PLATFORMS = [
-    { title:'macOS Apple Silicon DMG', re:/arm64\.dmg$/i,             icon:'apple' },
-    { title:'macOS Apple Silicon ZIP', re:/arm64.*\.zip$/i,          icon:'apple' },
-    { title:'Linux arm64 AppImage',    re:/linux.*arm64.*appimage/i, icon:'linux' },
-    { title:'Linux x64 AppImage',      re:/linux.*x64.*appimage$/i, icon:'linux' },
-    { title:'Linux arm64 deb',          re:/linux.*arm64.*\.deb$/i,  icon:'linux' },
-    { title:'Linux x64 deb',            re:/linux.*x64.*\.deb$/i,    icon:'linux' }
+    { title:"macOS Apple Silicon DMG", re:ARM_DMG_RE,                icon:"apple" },
+    { title:"macOS Intel DMG",         re:INTEL_DMG_RE,              icon:"apple" },
+    { title:"macOS Apple Silicon ZIP", re:/arm64.*\.zip$/i,          icon:"apple" },
+    { title:"macOS Intel ZIP",         re:INTEL_ZIP_RE,              icon:"apple" },
+    { title:"Linux arm64 AppImage",    re:/linux.*arm64.*appimage/i, icon:"linux" },
+    { title:"Linux x64 AppImage",      re:/linux.*x64.*appimage$/i,  icon:"linux" },
+    { title:"Linux arm64 deb",          re:/linux.*arm64.*\.deb$/i,  icon:"linux" },
+    { title:"Linux x64 deb",            re:/linux.*x64.*\.deb$/i,    icon:"linux" }
   ];
-  // NOTE: MAC_RE is a REFERENCE to a PLATFORMS entry, not a separate literal.
-  // buildModal matches the recommended row back to its table entry with
-  // `p.re === recRe` — a reference comparison. Two regex literals with identical
-  // source are still distinct objects, so writing them out again here makes that
-  // lookup return undefined and throws on `.title`, leaving the modal half-built.
-  // WIN_RE is gone with the Windows row; the old `PLATFORMS[4]` index was itself a
-  // trap, since removing or reordering a row silently repointed it at another platform.
-  var MAC_RE = PLATFORMS[0].re;
+  // MAC_RE is a REFERENCE to a PLATFORMS entry, not a separate literal: buildModal
+  // matches the recommended row back to its own table entry by identity
+  // (p.re === recRe), and two regex literals with identical source are still
+  // distinct objects — writing one out again here makes that lookup fail and
+  // throws on .title, leaving the modal half-built. So the macOS DMG patterns are
+  // named vars reused inside the table.
+  var MAC_ARM_RE = PLATFORMS[0].re;
+  var MAC_INTEL_RE = PLATFORMS[1].re;
+  var MAC_RE = MAC_ARM_RE;
   var ICONS = {
     apple: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18.7 10.7c-.1-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.7-.8-2.8-.7-1.4.1-2.8.8-3.5 2.1-1.5 2.5-.4 6.2 1.1 8.3.7 1 1.6 2.1 2.7 2.1 1.1-.1 1.5-.7 2.8-.7 1.3 0 1.6.7 2.8.7 1.1 0 1.9-1 2.6-2 .8-1.1 1.1-2.2 1.1-2.3 0-.1-2.1-.8-2.1-3.3zM16.3 4.6c.6-.7 1-1.7.9-2.7-.8 0-1.9.6-2.5 1.3-.6.6-1.1 1.7-.9 2.7 1 .1 1.9-.5 2.5-1.3z"/></svg>',
     win: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>',
@@ -615,9 +649,11 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   // to it instead of presenting an empty panel.
   function buildFallback() {
     var href=document.getElementById('dlBtn').href;
-    // One artifact, one title: the hero href is the Apple Silicon dmg whatever the
-    // visitor is running, so naming their OS here would misdescribe the file.
-    var title='macOS Apple Silicon DMG';
+    // Name the architecture of the file the hero actually points at — that anchor is
+    // architecture-aware now, so a fixed "Apple Silicon" title would misdescribe an
+    // Intel visitor's download. Read from the href rather than from HOST_IS_INTEL,
+    // because the href is the thing being described.
+    var title = ARM_DMG_RE.test(href) ? 'macOS Apple Silicon DMG' : 'macOS Intel DMG';
     document.getElementById('modalRec').classList.remove('hidden');
     document.getElementById('recTitle').textContent=title;
     document.getElementById('recFile').textContent=href.split('/').pop();
@@ -630,7 +666,13 @@ header a.gh:hover { color: rgba(255,255,255,0.7); }
   function buildModal(rels) {
     var latest=rels[0];
     if (!latest) return;
-    var assets=latest.assets||[], recRe=MAC_RE, rec=findAsset(assets,recRe);
+    // The recommended row follows the detected architecture, and falls back to
+    // Apple Silicon when the release has no Intel dmg at all — otherwise an Intel
+    // visitor on an older release would see the recommended panel HIDDEN, which is
+    // worse than being offered the other build.
+    var assets=latest.assets||[];
+    var recRe=(HOST_IS_INTEL && findAsset(assets, MAC_INTEL_RE)) ? MAC_INTEL_RE : MAC_ARM_RE;
+    var rec=findAsset(assets,recRe);
     var rp=document.getElementById('modalRec');
     if (rec) {
       rp.classList.remove('hidden');
