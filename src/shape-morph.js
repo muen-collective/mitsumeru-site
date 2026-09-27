@@ -56,10 +56,18 @@ const easeOutBounce = (t) => {
   return n1 * (t -= 2.625 / d1) * t + 0.984375;
 };
 
+/** Gentle overshoot: rises 8% past 1, then settles. No visible hops. */
+const easeOutGentle = (t) => {
+  const c1 = 0.8;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+};
+
 const EASES = {
   back: easeOutBack,
   bounce: easeOutBounce,
   cubic: easeOutCubic,
+  gentle: easeOutGentle,
 };
 
 export const SHAPE_NAMES = ['wireframe', 'polygon', 'sphere'];

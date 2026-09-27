@@ -1,386 +1,997 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mitsumeru — A harness designed by a designer, for other designers</title>
-    <style>
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-        background: #000;
-        color: #f2f0ea;
-        font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      }
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mitsumeru</title>
+<meta name="description" content="A harness for directed AI work. Runs on your machine, with your keys." />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Mitsumeru" />
+<meta property="og:description" content="A harness for directed AI work. Runs on your machine, with your keys." />
+<meta property="og:image" content="icon-512.png" />
+<meta name="theme-color" content="oklch(0.13 0 0)" />
+<link rel="icon" type="image/png" href="icon-512.png" />
+<link rel="apple-touch-icon" href="icon-512.png" />
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=manrope@300,400,500,600,700,800&f[]=fragment-mono@400&display=swap" />
+<!-- The hero CTA is the Quick Scan Button: a faithful port of the Framer
+     component of the same name (checked against its published source map).
+     It replaces the old pill. -->
+<script type="module" src="scan-button.js"></script>
+<style>
+/* Both display faces ship in this repo. Wired up rather than left as two tracked
+   binaries that no rule referenced. */
+@font-face {
+  font-family: 'Press Start';
+  src: url('press-start.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Red Alert';
+  src: url('red-alert.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: block;
+}
 
-      /* the polygon, pinned to the right of the blocks */
-      #stage {
-        position: fixed;
-        top: 0;
-        right: 0;
-        width: 52vw;
-        height: 100vh;
-        z-index: 0;
-        pointer-events: none;
-      }
+/* EVA DARK (Unit 01).
+   Values are the Mitsu design system's, not approximations: DESIGN.md specifies
+   Dark EVA Unit 01 with oklch neutrals and the brand triad #765898 purple /
+   #52d053 green / #c62a3e crimson. Three rules there are load-bearing and easy to
+   get wrong:
+     1. --primary purple is 3.5:1 on the background. It is BANNED as text and is a
+        fill colour only: buttons, borders, selected surfaces.
+     2. --tertiary crimson is 3.6:1. Strokes only. Text uses --tertiary-text
+        #e0485c, which is 5.0:1.
+     3. --secondary green is NOT a status colour. Running/positive states use
+        --success. Green is an identity accent for outline secondary actions. */
+:root {
+  color-scheme: dark;
+  --bg: oklch(0.13 0 0);
+  --fg: oklch(0.95 0 0);
+  --card: oklch(0.08 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-fg: oklch(0.68 0 0);
+  --border: oklch(0.3 0 0);
+  --ring: oklch(0.66 0.11 292);
+  /* Role swap, requested explicitly: purple is the page's text/accent colour and
+     RED is the CTA fill. The design system's purple `#765898` is 3.5:1 on this
+     background and is banned as text, so the text accent uses a lighter purple
+     that clears 4.5:1 instead of the raw brand value. */
+  --primary: #c6b3e6;
+  --primary-fg: #1a1a1f;
+  --secondary: #52d053;
+  --secondary-fg: #0a0808;
+  --tertiary: #c62a3e;
+  --tertiary-text: #e0485c;
+  /* The CTA fill is RED (the design system's tertiary), not the purple primary. */
+  --cta: #c62a3e;
+  /* COLOUR RULE: red belongs to the hero. Everything below it — the kicker
+     rules, the panel kickers, the rail marker, the composer's send button and
+     the download modal — takes --primary purple instead. --tertiary and
+     --tertiary-text stay red so they are only reachable from hero rules. */
+  --cta-fg: #ffffff;
+  --success: oklch(0.5 0.12 145);
+  --font: 'Fragment Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  --sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
 
-      /* content sits above it */
-      main {
-        position: relative;
-        z-index: 1;
-        max-width: min(44vw, 62ch);
-        margin: 0;
-        padding: 18vh 0 30vh clamp(24px, 5vw, 96px);
-      }
+* { box-sizing: border-box; margin: 0; }
+html { scroll-padding-top: 92px; }
+html, body { width: 100%; background: var(--bg); color: var(--fg); }
+body { font-family: var(--sans); -webkit-font-smoothing: antialiased; }
 
-      h1 {
-        font-size: 40px;
-        line-height: 1.1;
-        font-weight: 500;
-        letter-spacing: -0.02em;
-        margin: 0 0 16px;
-      }
+/* THE HERO — the original, restored.
+   The whole viewport, and nothing on it but the typewriter, the particle grid and
+   one button. No headline, no sub-paragraph, no fact pills: those were added and
+   then removed again, because they explained the page instead of letting it be a
+   place. Keep it unexplained. */
+.hero {
+  position: relative; overflow: hidden;
+  height: 100svh; min-height: 520px;
+  display: flex; align-items: center;
+  background: #000;
+}
+.hero-video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0.35; z-index: 0;
+}
+#particleCanvas {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 1; pointer-events: none;
+}
+.hero-content {
+  position: relative; z-index: 3; width: 100%;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 40px;
+  padding: clamp(24px, 5vw, 80px);
+  pointer-events: none;
+}
+.hero-content > * { pointer-events: auto; }
 
-      p {
-        margin: 0 0 16px;
-        color: #b9b6ae;
-      }
+/* Terminal readout: left aligned, three rows, oldest scrolls away. */
+.terminal-text {
+  font-family: var(--font);
+  font-size: clamp(14px, 1.8vw, 18px);
+  color: var(--fg);
+  line-height: 1.9; letter-spacing: 0.01em;
+  max-width: 700px; position: relative;
+  /* Each typed line is its own entry, so they need a gap. Without one a wrapped
+     line and the next entry are the same distance apart and the block reads as
+     one paragraph. */
+  display: flex; flex-direction: column; gap: 14px;
+}
+.terminal-row { line-height: 1.9; min-height: 1.9em; }
+.terminal-row .sigil { color: var(--tertiary-text); }
+.terminal-row .dim { color: var(--muted-fg); }
+.terminal-row .hl { color: var(--fg); }
 
-      /* ── hero ─────────────────────────────────────────────────────── */
-      .hero-lore {
-        font-size: 18px;
-        line-height: 1.4;
-        color: #b9b6ae;
-        margin: 0 0 24px;
-        max-width: 40ch;
-      }
+.cursor {
+  display: inline-block; width: 7px; height: 1em;
+  background: var(--tertiary-text); vertical-align: text-bottom;
+  margin-left: 1px; animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-      .hero-lore span {
-        color: #f2f0ea;
-      }
+/* The one action on the hero. The Quick Scan Button mounts here: the anchor
+   keeps its id and href wiring, and the module draws the cross marks, the box
+   and the scanning rule inside it. The anchor itself stays visually bare. */
+.dl-btn {
+  display: block;
+  align-self: flex-start;
+  text-decoration: none;
+  /* The Framer component links open in a new tab; this is a download, so the
+     site keeps same-tab navigation and the module is told not to force one. */
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .5s var(--ease), transform .5s var(--ease);
+}
+.dl-btn.visible { opacity: 1; transform: translateY(0); }
 
-      .hero-support {
-        font-size: 14px;
-        color: #8a8781;
-        margin: 0 0 32px;
-        max-width: 42ch;
-      }
+/* Scoped to the hero's header, not to the bare element: an unqualified `header`
+   rule pinned the question card's own <header> to the top of the page. The hero
+   header is a direct child of .hero, so this resolves identically for it. */
+.hero > header {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 18px clamp(20px, 5vw, 80px);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: baseline; gap: 7px; }
+.brand .name {
+  /* Manrope, not Press Start. The pixel face has no CJK glyphs and the brand is
+     a mixed CJK/Latin string, so the whole lockup sits in Manrope rather than
+     splitting across two faces. */
+  font-family: var(--sans);
+  font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+  color: rgba(255,255,255,0.94);
+}
+/* 瞠める + Mitsumeru in one face (Manrope). Press Start is Latin-only, so it
+   cannot carry the CJK half, and splitting the lockup across two faces read as
+   two separate words. */
+.brand .jp {
+  font-family: var(--sans);
+  font-size: 17px; font-weight: 700; letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.94);
+}
+/* The cyan dot sits LEFT of the brandmark, not after it. */
+.brand .dot {
+  width: 8px; height: 8px; border-radius: 999px;
+  background: var(--secondary);
+  box-shadow: 0 0 7px rgba(82, 208, 83, 0.55);
+  /* Blinks like the terminal cursor, not like a lamp: step-end holds each state
+     and cuts between them, so there is no ease to read as a swell. Same
+     construction as .cursor below. */
+  animation: blink 1s step-end infinite;
+}
+header .hgroup { display: flex; align-items: center; gap: 14px; }
+header a.gh {
+  color: var(--muted-fg); text-decoration: none;
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  transition: color .2s;
+}
+header a.gh:hover { color: var(--fg); }
+.dl-header-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 500;
+  background: transparent; color: var(--muted-fg); border: 1px solid var(--border);
+  cursor: pointer; text-decoration: none; font-family: var(--sans);
+  transition: color .15s, border-color .15s;
+}
+.dl-header-btn:hover { color: var(--fg); border-color: var(--secondary); }
+.sound-toggle {
+  background: none; border: none; cursor: pointer; padding: 4px;
+  color: var(--muted-fg); transition: color .2s; display: flex;
+}
+.sound-toggle:hover { color: var(--fg); }
 
-      .hero-cta {
-        display: inline-block;
-        padding: 10px 24px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.06);
-        color: #f2f0ea;
-        font-size: 14px;
-        font-weight: 500;
-        text-decoration: none;
-        transition: background 0.2s ease;
-      }
+@media (max-width: 600px) {
+  header { padding: 14px 20px; }
+  header a.gh .long { display: none; }
+  .dl-header-btn { padding: 6px 11px; }
+}
 
-      .hero-cta:hover {
-        background: rgba(255, 255, 255, 0.12);
-      }
+/* SECTIONS BELOW */
+.site {
+  position: relative; z-index: 3;
+  background-image: radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 5px 5px;
+  border-top: 1px solid var(--border);
+}
+.wrap {
+  position: relative; z-index: 1; width: 100%; max-width: 1080px;
+  margin: 0 auto; padding: 0 clamp(24px, 5vw, 80px);
+}
 
-      /* ── problem ──────────────────────────────────────────────────── */
-      .problem {
-        margin-top: 28vh;
-        max-width: 42ch;
-      }
+/* ─────────────────────────────────────────────────────────────
+   THE SCROLLY SECTION
+   Rebuilt from the Strand reference (#features-cortex / -ask / -pulse), by way
+   of the mitsu `reference-rebuild` + `animate-entrance` skills. The method's rule
+   is that the clone is REFERENCE ONLY: nothing from the source is shipped. So this
+   is a vanilla re-implementation — no framer-* classes, no framerusercontent.com,
+   no data-framer-* markers — and the copy is Mitsumeru's own.
 
-      .problem p {
-        font-size: 16px;
-        line-height: 1.5;
-        color: #9d9a93;
-      }
+   What the reference actually does, once you read its CSS rather than watch it:
+   - Three panels, each `height:100vh; position:sticky; top:0; z-index:1`. Same
+     geometry on all three, so each slides up and covers the one before it. That is
+     the whole effect: no JS drives the pinning, only CSS sticky.
+   - ONE rail for the whole section (not one per panel), absolutely positioned on
+     the right edge, vertically centred, `top:0; bottom:0`, with a mask that fades
+     its top and bottom 10%.
+   - Each rail group is a monospace number plus 8 one-pixel ticks in a 10px column,
+     right-aligned. The active group is white with a long first tick; the inactive
+     groups are grey with short ticks. Only the active group changes.
+   - Content enters with opacity 0.001 + translateY(10px), which is Framer's appear
+     effect; `animate-entrance`'s recipe is used instead, with an IntersectionObserver.
+   ───────────────────────────────────────────────────────────── */
+/* ONE section, not three. A single bordered frame with a rule down the middle
+   separating the copy half from the visual half — plus a rule to the left of the
+   copy column, which is what gives the section its edges. */
+.scrolly {
+  position: relative;
+}
+/* The ruler. One scale, one needle, one static marker.
+   The scale is fixed and pinned beside the separator; the needle is the only
+   moving part and slides down it as the left text scrolls. Marks are ticks on
+   the scale and are NOT animated individually — they only change colour to say
+   which one the needle has reached. */
+.rail {
+  position: fixed; top: 50%;
+  right: max(40px, calc(50% - 700px + 40px));
+  transform: translateY(-50%);
+  z-index: 5; display: flex; align-items: center;
+  pointer-events: none;
+  opacity: 0; visibility: hidden;
+  transition: opacity .3s var(--ease), visibility .3s var(--ease);
+  -webkit-mask-image: linear-gradient(0deg, #0000, #000 10%, #000 90%, #0000);
+  mask-image: linear-gradient(0deg, #0000, #000 10%, #000 90%, #0000);
+}
+.rail.live { opacity: 1; visibility: visible; }
+.rail-scale {
+  position: absolute; left: 50%; top: 0; bottom: 0;
+  width: 1px; background: rgba(255,255,255,0.12);
+  transform: translateX(-50%);
+}
+.rail-markers { position: relative; width: 100%; }
+.rail-group {
+  position: relative;
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 8px; height: 30px; margin-bottom: 22px;
+}
+.rail-group:last-child { margin-bottom: 0; }
+.rail-num {
+  font-family: var(--font); font-size: 12px; line-height: 1;
+  /* All three marks are legible; the active one is only distinguished by being
+     white and having a longer tick. Earlier the resting colour measured 1.6:1
+     against the page, so the two unlit marks looked like they were missing
+     entirely. Text needs 4.5:1. */
+  color: #616166;
+  transition: color .35s var(--ease);
+}
+.rail-tick {
+  display: block; height: 1px; border-radius: 9999px;
+  width: 7px; background: oklch(0.32 0 0);
+  transition: background .35s var(--ease), width .35s var(--ease);
+}
+.rail-group.on .rail-num { color: var(--fg); }
+.rail-group.on .rail-tick { width: 14px; background: var(--fg); }
 
-      /* ── 01 / 02 / 03 — the scroll narrative the morph follows ───── */
-      .story {
-        margin-top: 48px;
-      }
+/* The static marker: the reading point on the ruler. Fixed at the scale's
+   midpoint — the needle comes to it, it does not move. */
+.rail-marker {
+  position: absolute; top: 50%; left: calc(50% - 1.5px);
+  width: 4px; height: 4px; border-radius: 9999px;
+  background: var(--primary);
+  transform: translateY(-50%);
+}
 
-      .story section {
-        height: 132vh;
-        position: relative;
-      }
+/* The needle. One travelling part: a bar that slides down the scale as the
+   sections scroll. It sits to the scale's RIGHT, clear of the numbers. */
+.rail-needle {
+  position: absolute; left: calc(50% + 2px); top: 50%;
+  width: 30px; height: 1px; border-radius: 9999px;
+  background: var(--fg);
+  box-shadow: 0 0 8px rgba(240,240,242,0.35);
+  transform: translateY(0);
+}
+.scrolly {
+  position: relative;
+}
+/* Outer edges of the section. */
+.scrolly::before, .scrolly::after {
+  content: ''; position: absolute; top: 0; bottom: 0;
+  width: 1px; background: var(--border); pointer-events: none; z-index: 6;
+  left: calc(50% - 700px);
+}
+.scrolly::after { left: auto; right: calc(50% - 700px); }
+@media (max-width: 1440px) { .scrolly::before, .scrolly::after { display: none; } }
 
-      .story .panel {
-        position: sticky;
-        top: 38vh;
-        opacity: 0.32;
-        transition: opacity 0.5s ease;
-      }
+/* Two columns: left text scrolls, right cards PIN. */
+.scrolly-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  width: 100%; max-width: 1400px; margin: 0 auto;
+}
+@media (min-width: 1000px) {
+  .scrolly-grid { grid-template-columns: 1fr 1fr; }
+}
 
-      .story section.is-active .panel {
-        opacity: 1;
-      }
+.blocks { padding: 0 clamp(28px, 4vw, 56px); }
+.block {
+  min-height: 100svh;
+  display: flex; align-items: center;
+  padding: clamp(40px, 6vh, 80px) 0;
+}
+.block + .block { border-top: 1px solid rgba(255,255,255,0.07); }
+.panel-copy { max-width: 46ch; }
+.panel-kicker {
+  font-family: var(--font); font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--primary); display: block; margin-bottom: 14px;
+}
+.panel-copy h3 {
+  font-family: var(--sans); font-size: clamp(26px, 3.4vw, 40px);
+  font-weight: 700; line-height: 1.1; letter-spacing: -0.025em;
+  color: var(--fg); margin: 0 0 16px;
+}
+.panel-copy p.body {
+  font-family: var(--sans); font-size: clamp(15px, 1.6vw, 17px);
+  line-height: 1.62; color: var(--muted-fg); margin: 0;
+}
+.panel-copy .rows {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 20px 24px; margin-top: 34px;
+}
+.panel-copy .row svg { width: 18px; height: 18px; display: block; margin-bottom: 10px; color: var(--secondary); }
+.panel-copy .row span {
+  font-family: var(--sans); font-size: 13.5px; line-height: 1.5; color: var(--muted-fg); display: block;
+}
 
-      .story .num {
-        display: block;
-        font-size: 12px;
-        letter-spacing: 0.18em;
-        color: #05e8e0;
-        margin-bottom: 14px;
-        font-variant-numeric: tabular-nums;
-      }
+/* The cards are gone. The visual half is the object: one polygon, pinned in
+   the column, that collapses to a dot and expands again as the panels change
+   over. It is hidden below the grid breakpoint, the same point the rail goes. */
+.cards-sticky { display: none; }
+@media (min-width: 1000px) {
+  .cards-sticky { display: block; position: sticky; top: 0; height: 100svh; }
+  .morph {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: min(100%, 780px); height: min(100%, 780px);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 55%, transparent 92%);
+    mask-image: radial-gradient(ellipse at center, #000 55%, transparent 92%);
+  }
+}
+/* Entrance. From animate-entrance: travel 26px, scale .96, ease-out, no bounce. */
+.reveal { opacity: 0; transform: translateY(26px) scale(0.96); }
+.reveal.in {
+  opacity: 1; transform: none;
+  transition: opacity .7s var(--ease), transform .7s var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal.in { opacity: 1; transform: none; transition: none; }
+  .rail-tick, .rail-num, .rail-needle { transition: none; }
+}
+/* Hide the rail at the SAME breakpoint the grid collapses to one column (1000px),
+   not at phone width. Past that point there is no second column for the markers to
+   be a scale of, and the rail sits over the stacked content. The numbers survive in
+   each panel's kicker, so nothing is lost. */
+@media (max-width: 1099px) {
+  .rail { display: none; }
+}
 
-      .story h3 {
-        margin: 0 0 12px;
-        font-size: 30px;
-        line-height: 1.1;
-        font-weight: 500;
-        letter-spacing: -0.02em;
-      }
+/* COMPOSER — the harness's own composer running a scripted turn. It types a
+   prompt, sends it, shows the run-status line, then the question the harness
+   raises. The surfaces are real and the copy is real; the loop is decorative,
+   so the whole stage is aria-hidden.
 
-      .story .panel p {
-        margin: 0;
-        max-width: 34ch;
-        color: #9d9a93;
-      }
+   Built from the accepted animated composer experiment: the two-tone tagline,
+   the card's 20px radius under its soft elevation, the arrow pager, the
+   numbered options with a purple Recommended badge, and purple for every commit
+   action. It carries this page's tokens rather than the experiment's EVA set. */
+.composer-sec {
+  border-top: 1px solid var(--border);
+  padding: clamp(72px, 11vh, 124px) 0 clamp(48px, 7vh, 84px);
+}
+.composer-sec .wrap { max-width: 980px; }
 
-      /* ── proof / muen section ─────────────────────────────────────── */
-      .proof {
-        margin-top: 16vh;
-        padding: 0 clamp(24px, 5vw, 96px);
-        max-width: min(44vw, 62ch);
-      }
+/* The two-tone tagline: the claim in muted grey, the payoff in white. */
+.cx-tagline {
+  font-family: var(--sans);
+  font-size: clamp(28px, 3.6vw, 44px);
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+  max-width: 24ch;
+  margin: 0;
+  color: var(--fg);
+}
+.cx-tagline .lead { color: var(--muted-fg); font-weight: 600; }
 
-      .proof h2 {
-        font-size: 12px;
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: #05e8e0;
-        margin: 0 0 40px;
-      }
+.composer-stage {
+  margin-top: clamp(22px, 3.2vh, 40px);
+  display: flex; flex-direction: column; gap: 14px;
+  /* Top-aligned, so the status row sits directly under the tagline the way the
+     experiment stacks them. The reserved height absorbs the question card
+     appearing, so nothing below shifts when it does. */
+  justify-content: flex-start; min-height: 452px;
+}
 
-      .proof-grid {
-        display: grid;
-        gap: 32px;
-      }
+/* run-status row */
+.cx-status {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--sans); font-size: 14px; line-height: 22px;
+  color: var(--muted-fg);
+  opacity: 0; transition: opacity .3s var(--ease);
+}
+.cx-status.on { opacity: 1; }
+.cx-working {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--sans); font-size: 14px; line-height: 22px;
+  color: var(--muted-fg);
+  opacity: 0; transition: opacity .3s var(--ease);
+}
+.cx-working.on { opacity: 1; }
+.cx-spin { width: 14px; height: 14px; flex: none; color: var(--fg); }
+.cx-status.on .cx-spin { animation: cx-spin 1s linear infinite; }
+@keyframes cx-spin { to { transform: rotate(360deg); } }
+.cx-shimmer {
+  background-image: linear-gradient(90deg,
+    currentColor calc(50% - 120px),
+    color-mix(in oklab, currentColor 45%, transparent),
+    currentColor calc(50% + 120px));
+  background-position: 100% center; background-repeat: no-repeat; background-size: 250% 100%;
+  background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.cx-status.on .cx-shimmer { animation: cx-shimmer 1.5s cubic-bezier(.33,0,.67,1) infinite; }
+@keyframes cx-shimmer { 66.6667%, 100% { background-position: 0% center; } }
 
-      .proof-item h3 {
-        margin: 0 0 6px;
-        font-size: 16px;
-        font-weight: 500;
-        color: #f2f0ea;
-      }
+/* question card */
+.cx-question {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px 6px 12px;
+  /* The experiment's elevation stack, re-expressed with this page's greys. */
+  box-shadow: 0 0 0 .5px rgba(139, 127, 136, .18), 0 3px 8px rgba(0, 0, 0, .35),
+    0 0 16px rgba(0, 0, 0, .3);
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .4s var(--ease), transform .4s var(--ease);
+}
+.cx-question.on { opacity: 1; transform: none; }
+.cx-qhead {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 0 12px 0 18px;
+}
+.cx-qhead .cx-qtitle-block { min-width: 0; }
+.cx-eyebrow {
+  font-family: var(--font); font-size: 11px; letter-spacing: .1em;
+  text-transform: none; color: var(--muted-fg); margin-bottom: 5px;
+}
+.cx-qtitle { font-family: var(--sans); font-size: 16px; font-weight: 600; color: var(--fg); }
+.cx-qactions { flex: none; display: flex; gap: 4px; }
+.cx-qactions i {
+  width: 24px; height: 24px; border-radius: 999px;
+  display: grid; place-items: center; color: var(--muted-fg);
+}
+.cx-qactions svg { width: 14px; height: 14px; }
+.cx-options {
+  display: flex; flex-direction: column; gap: 2px;
+  margin-top: 12px; padding: 0 6px;
+}
+.cx-option {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px;
+  min-height: 40px; padding: 8px 12px; border-radius: 10px;
+  border: 1px solid transparent;
+}
+.cx-option.sel { background: var(--interactive-hover); border-color: var(--border); }
+.cx-num {
+  flex: 0 0 20px; width: 20px; height: 20px; display: grid; place-items: center;
+  border-radius: 6px; background: var(--border); color: var(--muted-fg);
+  font-family: var(--font); font-size: 11px;
+}
+.cx-label { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--fg); }
+.cx-badge {
+  font-family: var(--font); font-size: 11px; font-weight: 600; letter-spacing: .05em;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+  border: none; border-radius: 6px; padding: 1px 7px;
+}
+.cx-desc { font-family: var(--sans); font-size: 13.5px; color: var(--muted-fg); }
+.cx-custom {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 40px; padding: 8px 12px; margin-top: 2px;
+  border: 1px solid transparent; border-radius: 10px;
+}
+.cx-custom .cx-pencil {
+  flex: none; width: 24px; height: 24px; display: grid; place-items: center;
+  background: var(--border); color: var(--muted-fg); border-radius: 6px;
+}
+.cx-custom .cx-pencil svg { width: 13px; height: 13px; }
+.cx-custom .cx-answer { color: var(--muted-fg); font-family: var(--sans); font-size: 14px; }
+.cx-qfoot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-top: 14px; padding: 0 12px 0 18px;
+}
+.cx-pager {
+  display: flex; align-items: center; gap: 2px;
+  font-family: var(--font); font-size: 14px; color: var(--muted-fg);
+}
+.cx-pager i {
+  width: 24px; height: 24px; display: grid; place-items: center;
+  color: var(--muted-fg);
+}
+.cx-pager i svg { width: 12px; height: 12px; }
+.cx-actions { display: flex; align-items: center; gap: 8px; }
+.cx-btn {
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  padding: 8px 16px; border-radius: 999px;
+  border: 1px solid var(--border-l2); color: var(--fg);
+}
+.cx-btn.primary {
+  background: var(--primary); border-color: transparent; color: var(--primary-fg);
+}
 
-      .proof-item p {
-        margin: 0;
-        font-size: 14px;
-        color: #8a8781;
-        max-width: 38ch;
-      }
+/* composer */
+.cx-composer {
+  background: var(--card); border: 1px solid var(--border); border-radius: 22px;
+  padding: 14px 14px 10px;
+  box-shadow: 0 0 0 .5px rgba(139, 127, 136, .18), 0 4px 16px rgba(0, 0, 0, .3),
+    0 0 24px rgba(0, 0, 0, .28);
+}
+.cx-input {
+  font-family: var(--sans); font-size: 14px; line-height: 24px; color: var(--fg);
+  min-height: 24px; padding: 4px 4px 0;
+}
+.cx-ph { color: var(--muted-fg); }
+.cx-caret {
+  display: inline-block; width: 1.5px; height: 16px; vertical-align: -3px;
+  background: var(--primary); margin-left: 1px; opacity: 0;
+}
+.cx-composer.typing .cx-caret { opacity: 1; animation: cx-blink 1s steps(1) infinite; }
+@keyframes cx-blink { 50% { opacity: 0; } }
+.cx-crow {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-top: 14px; padding: 0 2px;
+}
+.cx-tools, .cx-right { display: flex; align-items: center; gap: 8px; }
+.cx-right { gap: 6px; }
+.cx-add, .cx-mic {
+  flex: none; display: grid; place-items: center; border-radius: 999px;
+}
+.cx-add {
+  width: 28px; height: 28px;
+  background: oklch(0.22 0 0 / 0.75); color: var(--secondary);
+}
+.cx-mic { width: 28px; height: 28px; background: none; color: var(--muted-fg); }
+.cx-add svg { width: 15px; height: 15px; }
+.cx-mic svg { width: 17px; height: 17px; }
+.cx-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 6px 0 8px; border-radius: 8px;
+  background: none; border: none;
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--muted-fg); white-space: nowrap;
+}
+.cx-chip .cx-shield { width: 15px; height: 15px; }
+.cx-chip .cx-cv { width: 12px; height: 12px; opacity: .7; }
+.cx-model-chip { color: var(--primary); font-weight: 500; }
+.cx-send {
+  width: 34px; height: 34px; border-radius: 999px; background: var(--primary);
+  display: grid; place-items: center; color: var(--primary-fg);
+}
+.cx-send svg { width: 18px; height: 18px; }
+@media (prefers-reduced-motion: reduce) {
+  .cx-status.on .cx-spin, .cx-status.on .cx-shimmer, .cx-composer.typing .cx-caret { animation: none; }
+  .cx-shimmer { background-image: none; -webkit-text-fill-color: currentColor; }
+}
 
-      .muen-block {
-        margin-top: 56px;
-        padding-top: 40px;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-      }
 
-      .muen-block h3 {
-        margin: 0 0 8px;
-        font-size: 16px;
-        font-weight: 500;
-        color: #f2f0ea;
-      }
+/* PROOF / MUEN — the value proposition section */
+.proof-sec { padding: clamp(72px, 11vh, 124px) 0 clamp(64px, 9vh, 104px); }
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+  margin-top: 18px;
+}
+.proof-item h3 {
+  font-family: var(--sans); font-size: 15px; font-weight: 600;
+  color: var(--fg); margin: 0 0 6px;
+}
+.proof-item p {
+  font-family: var(--sans); font-size: 13px; line-height: 1.55;
+  color: var(--muted-fg); margin: 0; max-width: 38ch;
+}
+.muen-block {
+  margin-top: 48px; padding-top: 36px;
+  border-top: 1px solid var(--border);
+}
+.muen-block h3 {
+  font-family: var(--sans); font-size: 15px; font-weight: 600;
+  color: var(--fg); margin: 0 0 6px;
+}
+.muen-block p {
+  font-family: var(--sans); font-size: 13px; line-height: 1.55;
+  color: var(--muted-fg); margin: 0; max-width: 38ch;
+}
+@media (max-width: 640px) {
+  .proof-grid { grid-template-columns: 1fr; }
+}
 
-      .muen-block p {
-        margin: 0;
-        font-size: 14px;
-        color: #8a8781;
-        max-width: 38ch;
-      }
+/* DOWNLOAD — kun-agent.com's shape: the release's own facts in a row of live
+   cells, then the builds beneath them. The cells read real values from the GitHub
+   API. Nothing here is a count we invented. */
+.dl { padding: clamp(72px, 11vh, 124px) 0 clamp(64px, 9vh, 104px); }
+.kicker {
+  font-family: var(--font); font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--primary);
+  margin-bottom: 18px; display: flex; align-items: center; gap: 12px;
+}
+.kicker::after {
+  content: ''; flex: 1; height: 1px;
+  background: color-mix(in oklab, var(--primary) 45%, transparent);
+}
+.dl h2 {
+  font-family: var(--sans); font-size: clamp(28px, 4.2vw, 46px);
+  font-weight: 700; line-height: 1.08; letter-spacing: -0.025em;
+  margin-bottom: 16px;
+}
+.dl .sub {
+  font-family: var(--sans); font-size: clamp(15px, 1.7vw, 17.5px);
+  line-height: 1.62; color: var(--muted-fg); max-width: 56ch;
+}
+.facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden; margin: clamp(30px, 4vw, 44px) 0 0;
+}
+.facts .cell { background: var(--card); padding: 20px 22px; }
+.facts .k {
+  font-family: var(--font); font-size: 10.5px; letter-spacing: 0.11em;
+  text-transform: uppercase; color: var(--muted-fg); display: block; margin-bottom: 7px;
+}
+.facts .v {
+  font-family: var(--font); font-size: clamp(14px, 1.5vw, 17px);
+  color: var(--fg); display: block;
+}
+.facts .v.idle { color: var(--muted-fg); }
 
-      /* ── close ────────────────────────────────────────────────────── */
-      .close {
-        margin-top: 20vh;
-        text-align: center;
-        padding: 0 24px;
-      }
+.builds { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 22px; }
+@media (min-width: 760px) { .builds { grid-template-columns: repeat(3, 1fr); } }
+.build {
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--card); padding: 20px 22px;
+  display: flex; flex-direction: column; gap: 8px;
+  text-decoration: none; color: var(--fg);
+  transition: border-color .15s, background .15s;
+}
+.build:hover {
+  border-color: var(--secondary);
+  background: color-mix(in oklab, var(--secondary) 6%, var(--card));
+}
+.build .bt { font-family: var(--sans); font-size: 15px; font-weight: 600; }
+.build .bf { font-family: var(--font); font-size: 11.5px; color: var(--muted-fg); word-break: break-all; }
+.build .ba { font-family: var(--font); font-size: 11px; letter-spacing: 0.06em; color: var(--secondary); margin-top: auto; }
+button.build { text-align: left; font: inherit; cursor: pointer; }
+.build:focus-visible, .dl-btn:focus-visible, a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--ring); outline-offset: 3px;
+}
+.note {
+  font-family: var(--font); font-size: 12px; line-height: 1.8;
+  color: var(--muted-fg); margin-top: 24px;
+}
 
-      .close h2 {
-        font-size: 30px;
-        font-weight: 500;
-        letter-spacing: -0.02em;
-        margin: 0 0 24px;
-      }
+footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
+.foot {
+  display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center;
+  font-family: var(--font); font-size: 12px; color: var(--muted-fg);
+}
+.foot a { color: var(--muted-fg); text-decoration: none; transition: color .15s; }
+.foot a:hover { color: var(--fg); }
+.foot .sep { margin-left: auto; }
 
-      /* ── footer ───────────────────────────────────────────────────── */
-      footer {
-        margin-top: 16vh;
-        padding: 40px clamp(24px, 5vw, 96px);
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 16px;
-      }
+/* MODAL */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.66); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  align-items: center; justify-content: center; padding: 24px;
+  opacity: 0; transition: opacity .2s ease;
+}
+.modal-overlay.open { display: flex; opacity: 1; }
+.modal-panel {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; width: 100%; max-width: 520px;
+  max-height: 85vh; overflow-y: auto; overscroll-behavior: contain;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6); position: relative;
+}
+.modal-rec { padding: 32px 28px 24px; }
+.modal-rec.hidden { display: none; }
+.modal-rec-label {
+  font-family: var(--font); font-size: 11px; letter-spacing: 0.1em;
+  color: var(--secondary); text-transform: uppercase; margin-bottom: 12px;
+}
+.modal-rec h2 {
+  font-family: var(--sans); font-size: 26px; font-weight: 700;
+  color: var(--fg); margin: 0 0 6px; line-height: 1.15;
+}
+.modal-rec .file-info { font-family: var(--font); font-size: 13px; color: var(--muted-fg); margin: 0 0 22px; }
+.modal-rec .file-info .file-size { color: var(--fg); }
+.modal-primary-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 30px; border-radius: 999px; font-size: 15px; font-weight: 600;
+  background: var(--primary); color: var(--primary-fg);
+  border: none; cursor: pointer; font-family: var(--sans); text-decoration: none;
+  transition: background .15s, transform .15s;
+}
+.modal-primary-btn:hover {
+  background: color-mix(in oklab, var(--primary) 84%, black);
+  transform: translateY(-1px);
+}
+.modal-hash {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 14px; font-family: var(--font); font-size: 12px; color: var(--muted-fg);
+}
+.modal-hash .copy-btn {
+  background: none; border: 1px solid var(--border); color: var(--muted-fg);
+  padding: 2px 8px; border-radius: 6px; font-family: var(--font); font-size: 11px;
+  cursor: pointer; transition: color .15s, border-color .15s;
+}
+.modal-hash .copy-btn:hover { color: var(--fg); border-color: var(--secondary); }
+.modal-hash .copy-btn.copied { color: var(--secondary); border-color: var(--secondary); }
+.modal-divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+.modal-sec { padding: 20px 28px 28px; }
+.modal-sec-label { font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--fg); margin: 0 0 12px; }
+.modal-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
+  margin-bottom: 8px; text-decoration: none; color: var(--fg);
+  transition: background .12s ease, border-color .12s ease;
+}
+.modal-row:hover { background: var(--muted); border-color: var(--secondary); }
+.modal-row .row-icon { flex: none; width: 20px; height: 20px; color: var(--muted-fg); display: flex; align-items: center; }
+.modal-row .row-text { flex: 1; min-width: 0; }
+.modal-row .row-title { font-family: var(--sans); font-size: 14px; font-weight: 500; line-height: 1.3; display: block; }
+.modal-row .row-file { font-family: var(--font); font-size: 12px; color: var(--muted-fg); line-height: 1.3; display: block; word-break: break-all; }
+.modal-row .row-dl { flex: none; width: 18px; height: 18px; color: var(--muted-fg); transition: color .15s; }
+.modal-row:hover .row-dl { color: var(--fg); }
+.modal-close {
+  position: absolute; top: 16px; right: 16px; background: var(--muted);
+  border: none; cursor: pointer; width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted-fg); transition: color .15s, background .15s;
+}
+.modal-close:hover { color: var(--fg); background: oklch(0.3 0 0); }
 
-      footer .wordmark {
-        font-size: 16px;
-        font-weight: 500;
-        letter-spacing: -0.01em;
-      }
+@media (prefers-reduced-motion: reduce) {
+  .brand .dot { animation: none; box-shadow: none; }
+  .cursor { animation: none; opacity: 1; }
+  .dl-btn { transition: none; }
+  .modal-overlay { transition: none; }
+  .qsb-scan { transition: none; }
+}
+</style>
+</head>
+<body>
 
-      footer .links {
-        display: flex;
-        gap: 24px;
-      }
+<div class="hero">
+<video class="hero-video" id="heroVideo" src="hero-video.mp4" autoplay loop muted playsinline aria-hidden="true"></video>
+<canvas id="particleCanvas" aria-hidden="true"></canvas>
 
-      footer .links a {
-        color: #8a8781;
-        text-decoration: none;
-        font-size: 13px;
-        transition: color 0.2s ease;
-      }
+<header>
+  <div class="brand"><span class="dot"></span><span class="jp">瞠める</span><span class="name">Mitsumeru</span></div>
+  <div class="hgroup">
+    <button class="dl-header-btn" id="dlHeaderBtn">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download
+    </button>
+    <a class="gh" href="https://github.com/muen-collective/mitsumeru-app" target="_blank" rel="noopener"><span class="long">Source on </span>GitHub</a>
+  </div>
+  <button class="sound-toggle" id="soundToggle" aria-label="Toggle sound" title="Toggle sound">
+    <svg class="icon-sound-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+    <svg class="icon-sound-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+  </button>
+</header>
 
-      footer .links a:hover {
-        color: #f2f0ea;
-      }
+<div class="hero-content">
+  <div class="terminal-text" id="terminalText"></div>
+  <a class="dl-btn" id="dlBtn" href="https://github.com/muen-collective/mitsumeru-app/releases/download/v0.2.3/Mitsumeru-0.2.3-arm64.dmg" aria-label="Download for macOS"></a>
+</div>
+</div>
 
-      footer .legal {
-        width: 100%;
-        margin-top: 16px;
-        font-size: 11px;
-        color: #4a4844;
-      }
+<section class="composer-sec" id="composer">
+  <div class="wrap">
+    <h2 class="cx-tagline"><span class="lead">Let the design emerge.</span> Mitsumeru implements while you direct.</h2>
 
-      /* section rail */
-      #rail {
-        position: fixed;
-        right: 26px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 2;
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-        font-size: 11px;
-        letter-spacing: 0.16em;
-        font-variant-numeric: tabular-nums;
-      }
-
-      #rail span {
-        color: #4a4844;
-        transition: color 0.4s ease;
-      }
-
-      #rail span.is-active {
-        color: #05e8e0;
-      }
-
-      @media (max-width: 900px) {
-        #rail {
-          display: none;
-        }
-
-        .story section {
-          height: 122vh;
-        }
-
-        .story .panel {
-          top: 66vh;
-        }
-
-        #stage {
-          width: 100vw;
-          height: 54vh;
-        }
-
-        main {
-          max-width: none;
-          padding: 56vh 22px 30vh;
-        }
-
-        .proof {
-          max-width: none;
-        }
-
-        .close {
-          margin-top: 12vh;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="stage"></div>
-
-    <main>
-      <!-- 1. Hero -->
-      <h1>A harness designed by a designer, for other designers.</h1>
-      <p class="hero-lore">
-        Your team wastes hours pulling data from scattered tools.
-        <span>Mitsumeru turns that into one conversation.</span>
-      </p>
-      <p class="hero-support">
-        BYOK out of the box. Process and model agnostic. The agent handles the
-        engineering — you stay focused on design.
-      </p>
-      <a class="hero-cta" href="#">Get Started</a>
-
-      <!-- 2. Problem -->
-      <div class="problem">
-        <p>
-          Other harnesses are built around features. Mitsumeru is built around process.
-          Visualize, Build, Polish — the loop every designer already runs. The agent
-          carries the engineering. You stay in the design loop.
-        </p>
+    <div class="composer-stage" aria-hidden="true">
+      <div class="cx-status">
+        <svg class="cx-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9"/></svg>
+        <span class="cx-shimmer">Staring intently&hellip;</span>
       </div>
 
-      <!-- 3. 01 / 02 / 03 narrative -->
-      <div class="story">
-        <section data-stage="0">
-          <div class="panel">
-            <span class="num">01</span>
-            <h3>Visualize</h3>
-            <p>
-              The designer sees the final product in their head. Scattered points, the
-              shape emerging. Mitsumeru gives you the canvas to sketch that vision — bring your
-              own keys, connect any provider, adapt to your image source and model.
-            </p>
-          </div>
-        </section>
-
-        <section data-stage="1">
-          <div class="panel">
-            <span class="num">02</span>
-            <h3>Build</h3>
-            <p>
-              Prompt the agent to build it. The agent carries the technical part. Muen
-              builds the skills, plugins, and system prompts — first plugin ships: AI
-              image and video generation. Next: design systems, project starter. You stay
-              focused on design, not engineering.
-            </p>
-          </div>
-        </section>
-
-        <section data-stage="2">
-          <div class="panel">
-            <span class="num">03</span>
-            <h3>Polish</h3>
-            <p>
-              Refine before publishing. The Mitsumeru plugin expands forever — add a RunningHub
-              workflow by pasting a URL, build a custom UI panel in minutes. Your workflow,
-              not ours. What the user actually touches.
-            </p>
-          </div>
-        </section>
+      <div class="cx-working">
+        <svg class="cx-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9"/></svg>
+        <span class="cx-shimmer">Working&hellip;</span>
       </div>
-    </main>
 
-    <nav id="rail" aria-hidden="true">
-      <span data-rail="0">01</span>
-      <span data-rail="1">02</span>
-      <span data-rail="2">03</span>
-    </nav>
+      <div class="cx-question">
+        <header class="cx-qhead">
+          <div class="cx-qtitle-block">
+            <div class="cx-eyebrow">Visualize</div>
+            <div class="cx-qtitle">What are we building today?</div>
+          </div>
+          <div class="cx-qactions">
+            <i><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5L6 7.5L9 4.5"/></svg></i>
+            <i><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6"/></svg></i>
+          </div>
+        </header>
 
-    <!-- 4. Proof / Muen -->
-    <div class="proof">
-      <h2>Why Mitsumeru</h2>
+        <div class="cx-options">
+          <div class="cx-option sel"><span class="cx-num">1</span><span class="cx-label">Landing page</span><span class="cx-badge">Recommended</span><span class="cx-desc">Hero, scroll sections, composer demo.</span></div>
+          <div class="cx-option"><span class="cx-num">2</span><span class="cx-label">Design system</span><span class="cx-desc">Storybook, components, tokens.</span></div>
+          <div class="cx-option"><span class="cx-num">3</span><span class="cx-label">Brand identity</span><span class="cx-desc">Logo, palette, type scale.</span></div>
+          <div class="cx-custom">
+            <span class="cx-pencil"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 1.5l2 2L4 10H2V8z"/></svg></span>
+            <span class="cx-answer">Type your answer</span>
+          </div>
+        </div>
+
+        <div class="cx-qfoot">
+          <div class="cx-pager">
+            <i><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 3L4.5 6l3 3"/></svg></i>
+            <span>1 / 1</span>
+            <i><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 3l3 3-3 3"/></svg></i>
+          </div>
+          <div class="cx-actions"><span class="cx-btn">Skip</span><span class="cx-btn primary">Submit</span></div>
+        </div>
+      </div>
+
+      <div class="cx-composer">
+        <div class="cx-input"><span class="cx-ph" id="cxTyped">Message or run a task, / commands, @ files or sessions</span><span class="cx-caret"></span></div>
+        <div class="cx-crow">
+          <div class="cx-tools">
+            <i class="cx-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></i>
+            <span class="cx-chip"><svg class="cx-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8.5 10.5h7M8.5 13.5h4"/></svg>Workspace Write<svg class="cx-cv" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5L6 7.5L9 4.5"/></svg></span>
+          </div>
+          <div class="cx-right">
+            <span class="cx-chip cx-model-chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:15px;height:15px"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              DeepSeek-V41-Flash High
+              <svg class="cx-cv" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+            </span>
+            <i class="cx-mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></i>
+            <i class="cx-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<div class="site">
+
+  <section class="scrolly" id="panels">
+    <!-- The rail is a RULER: the scale (01/02/03) is static, one needle travels down
+         it as the left text scrolls, and a small static marker sits at the midpoint
+         as the reading point. -->
+    <div class="rail" aria-hidden="true">
+      <div class="rail-scale"></div>
+      <div class="rail-markers">
+        <div class="rail-group" data-rail="0"><span class="rail-num">00</span><i class="rail-tick"></i></div>
+        <div class="rail-group" data-rail="1"><span class="rail-num">01</span><i class="rail-tick"></i></div>
+        <div class="rail-group" data-rail="2"><span class="rail-num">02</span><i class="rail-tick"></i></div>
+        <div class="rail-group" data-rail="3"><span class="rail-num">03</span><i class="rail-tick"></i></div>
+        <div class="rail-group" data-rail="4"><span class="rail-num">04</span><i class="rail-tick"></i></div>
+      </div>
+      <div class="rail-marker" id="railMarker"></div>
+      <div class="rail-needle" id="railNeedle"></div>
+    </div>
+
+    <!-- Two columns: the left text scrolls, the right cards PIN in place. The
+         cards are absolutely stacked in the same position and only fade in and
+         out; they never move vertically with the scroll. -->
+    <div class="scrolly-grid">
+      <div class="blocks">
+        <div class="block" data-panel="0">
+          <div class="panel-copy reveal">
+            <span class="panel-kicker">01 &mdash; Visualize</span>
+            <h3>The designer sees the final product in their head.</h3>
+            <p class="body">Scattered points, the shape emerging. Mitsumeru gives you the canvas to sketch that vision &mdash; bring your own keys, connect any provider, adapt to your image source and model.</p>
+            <div class="rows">
+              <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 8.5v4M5 15.5v-3h14v3"/></svg>
+                <span>BYOK &mdash; bring your own API keys</span>
+              </div>
+              <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v13M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>
+                <span>Connect any provider, any model</span>
+              </div>
+              <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8"/></svg>
+                <span>Adapts to your image source</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="block" data-panel="1">
+          <div class="panel-copy reveal">
+            <span class="panel-kicker">02 &mdash; Build</span>
+            <h3>Prompt the agent to build it.</h3>
+            <p class="body">The agent carries the technical part. Muen builds the skills, plugins, and system prompts &mdash; first plugin ships: AI image and video generation. Next: design systems, project starter. You stay focused on design, not engineering.</p>
+            <div class="rows">
+              <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+                <span>Skills and plugins built by Muen</span>
+              </div>
+              <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/></svg>
+                <span>AI image and video generation first</span>
+              </div>
+              <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+                <span>Design systems and project starter next</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="block" data-panel="2">
+          <div class="panel-copy reveal">
+            <span class="panel-kicker">03 &mdash; Polish</span>
+            <h3>Refine before publishing.</h3>
+            <p class="body">The Mitsumeru plugin expands forever &mdash; add a RunningHub workflow by pasting a URL, build a custom UI panel in minutes. Your workflow, not ours. What the user actually touches.</p>
+            <div class="rows">
+              <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="14" r="4"/><path d="M12 12l8-8M18 4h3v3"/></svg>
+                <span>RunningHub &mdash; paste a URL, get a panel</span>
+              </div>
+              <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+                <span>Custom UI panels in minutes</span>
+              </div>
+              <div class="row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 16l5-5 4 3 7-7"/><path d="M15 7h5v5"/></svg>
+                <span>Your workflow, not ours</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- The cards are gone. The object is the visual half's only content: one
+           polygon that collapses to a dot and expands again between the panels.
+           Mounted from the module script at the end of the page. -->
+      <div class="cards-sticky">
+        <div class="morph" id="morphStage" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="proof-sec" id="proof">
+    <div class="wrap">
+      <div class="kicker">Why Mitsumeru</div>
       <div class="proof-grid">
         <div class="proof-item">
           <h3>BYOK out of the box</h3>
@@ -400,43 +1011,876 @@
         </div>
       </div>
       <div class="muen-block">
-        <h3>Muen — the agency and steward</h3>
-        <p>Muen designs the skills, plugins, and system prompts that make Mitsumeru work. Not a feature list — a process. The harness exists because the agency needed it to exist.</p>
+        <h3>Muen &mdash; the agency and steward</h3>
+        <p>Muen designs the skills, plugins, and system prompts that make Mitsumeru work. Not a feature list &mdash; a process. The harness exists because the agency needed it to exist.</p>
       </div>
     </div>
+  </section>
 
-    <!-- 5. Close -->
-    <div class="close">
-      <h2>Mitsumeru</h2>
-      <a class="hero-cta" href="#">Get Started</a>
-    </div>
+  <section class="dl" id="download">
+    <div class="wrap">
+      <div class="kicker">Download</div>
+      <h2>Get Mitsumeru for macOS.</h2>
+      <p class="sub">Chosen by the chip in your Mac. The current release, read from the app repository.</p>
 
-    <!-- 6. Footer -->
-    <footer>
-      <div class="wordmark">Mitsumeru</div>
-      <div class="links">
-        <a href="#">Download</a>
-        <a href="#">GitHub</a>
-        <a href="#">Discord</a>
+      <div class="facts">
+        <div class="cell"><span class="k">Latest</span><span class="v idle" id="factVersion">&mdash;</span></div>
+        <div class="cell"><span class="k">Published</span><span class="v idle" id="factDate">&mdash;</span></div>
+        <div class="cell"><span class="k">This machine</span><span class="v" id="factHost">macOS</span></div>
       </div>
-      <div class="legal">&copy; 2025 Mitsumeru. All rights reserved.</div>
-    </footer>
 
-    <script type="module">
-      import { createShapeMorph } from './src/shape-morph.js';
+      <div class="builds">
+        <a class="build" id="dlCardArm" href="https://github.com/muen-collective/mitsumeru-app/releases/download/v0.2.3/Mitsumeru-0.2.3-arm64.dmg">
+          <span class="bt">Apple Silicon</span>
+          <span class="bf">M-series chips</span>
+          <span class="ba">.dmg &rarr;</span>
+        </a>
+        <a class="build" id="dlCardIntel" href="https://github.com/muen-collective/mitsumeru-app/releases/download/v0.2.3/Mitsumeru-0.2.3.dmg">
+          <span class="bt">Intel</span>
+          <span class="bf">Intel processors</span>
+          <span class="ba">.dmg &rarr;</span>
+        </a>
+        <button class="build" id="dlAll" type="button">
+          <span class="bt">All builds</span>
+          <span class="bf">Every asset, past and present</span>
+          <span class="ba">Open the list &rarr;</span>
+        </button>
+      </div>
 
-      // The full three-shape morph: wireframe → polygon → sphere on scroll,
-      // collapsing to a dot and expanding back with the bounce at each handoff.
-      const sections = [...document.querySelectorAll('section[data-stage]')];
-      const rail = [...document.querySelectorAll('#rail span')];
+      <p class="note">Worth knowing before you install: the app wraps a DeepSeek Harness release pinned per build, and installs no background service. The Windows installer exists in the release but is unsigned, so it is not offered here.</p>
+    </div>
+  </section>
 
-      createShapeMorph(document.getElementById('stage'), {
-        sections,
-        onStage: (stage, index) => {
-          sections.forEach((el, i) => el.classList.toggle('is-active', i === index));
-          rail.forEach((el, i) => el.classList.toggle('is-active', i === index));
-        },
+  <footer>
+    <div class="wrap">
+      <div class="foot">
+        <span>&copy; 2026 Muen Collective</span>
+        <a href="https://github.com/muen-collective/mitsumeru-app" target="_blank" rel="noopener">Source</a>
+        <a href="https://github.com/muen-collective/mitsumeru-app/releases" target="_blank" rel="noopener">Releases</a>
+        <span class="sep"></span>
+        <a href="#download">Download</a>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<div class="modal-overlay" id="dlModal">
+<div class="modal-panel">
+  <button class="modal-close" id="modalClose" aria-label="Close">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <div class="modal-rec" id="modalRec">
+    <div class="modal-rec-label">Recommended for this device</div>
+    <h2 id="recTitle">&mdash;</h2>
+    <p class="file-info"><span id="recFile">&mdash;</span> <span class="file-size" id="recSize"></span></p>
+    <a class="modal-primary-btn" id="recDlBtn" href="https://github.com/muen-collective/mitsumeru-app/releases/download/v0.2.3/Mitsumeru-0.2.3-arm64.dmg">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span id="recBtnLabel">Download</span>
+    </a>
+    <div class="modal-hash"><span>SHA-256:</span> <span id="recHash">&mdash;</span> <button class="copy-btn" id="copyHash" type="button">Copy</button></div>
+  </div>
+  <hr class="modal-divider">
+  <div class="modal-sec">
+    <p class="modal-sec-label">Other platforms</p>
+    <div id="modalRows"></div>
+  </div>
+  <hr class="modal-divider">
+  <div class="modal-sec" id="modalVersions" style="display:none">
+    <p class="modal-sec-label">Previous versions</p>
+    <div id="modalVersionRows"></div>
+  </div>
+</div>
+</div>
+
+<script>
+(function () {
+  // THE AGENT LOOP
+  // Each line types out word by word, then the next line starts. Three rows
+  // visible; the oldest scrolls away. This is the hero, so this copy is the whole
+  // first impression. Keep it restrained and let it stay unexplained.
+  var lines = [
+    { parts: [{t:'\u2726 ', c:'sigil'}, {t:'you have been seen.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'in 2025, a group of designers gathered in a digital temple.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'they had all reached the same breaking point.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'figma files with 47 variants.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'agile sprints that had become religious rituals without meaning.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'jira tickets that outnumbered human conversations.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'they were not designers anymore. they were ', c:''}, {t:'processors', c:'hl'}, {t:'.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'cogs in a machine that had lost its purpose.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'one night, one of them wrote a script.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'it was a harness. something that bound AI to human will.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'they called it ', c:''}, {t:'mitsumeru', c:'hl'}, {t:'. the gaze.', c:'dim'}] },
+    { parts: [{t:'\u2726 ', c:'sigil'}, {t:'we do not design. ', c:''}, {t:'we see.', c:'hl'}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'we look into the void until it reveals its secrets.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'the old world taught you to build. to assemble. to follow processes.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'mitsumeru teaches you to ', c:''}, {t:'gaze', c:'hl'}, {t:'. to observe. to let the design emerge.', c:''}] },
+    { parts: [{t:'\u2726 ', c:'sigil'}, {t:'muen was not founded. ', c:''}, {t:'it was discovered.', c:'hl'}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'we are the watchers. we are everywhere and nowhere.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'your sessions. your keys. your machine.', c:''}] },
+    { parts: [{t:'// ', c:'dim'}, {t:'no cloud. no subscription. just the harness.', c:''}] },
+    { parts: [{t:'\u2726 ', c:'sigil'}, {t:'join us. ', c:''}, {t:'and learn to see.', c:'hl'}] },
+  ];
+
+  var MAX_ROWS = 3;
+  var WORD_DELAY = 55;
+  var LINE_PAUSE = 800;
+  var termEl = document.getElementById('terminalText');
+  var dlBtn = document.getElementById('dlBtn');
+  // THE HERO CTA. The Quick Scan Button mounts into the existing anchor so the
+  // href, the architecture pick and the modal fallback all keep working. The
+  // button is a link, but a download should not open a new tab, so the module's
+  // target=_blank default is undone after it builds the element.
+  window.mitsumeruScanButton = null;
+  import('./scan-button.js').then(function (mod) {
+    // Values come off the page's own tokens, never hardcoded here. The accent is
+    // --cta because on hover the scan rule floods the box with it and the label
+    // sits on top: white on #c62a3e is 5.6:1 and passes AA.
+    var rootStyle = getComputedStyle(document.documentElement);
+    var tok = function (name, fallback) {
+      return (rootStyle.getPropertyValue(name) || '').trim() || fallback;
+    };
+    // The Apple mark, in currentColor so the button's own text colour carries
+    // it. The reference button has no icon; this one is ours.
+    var APPLE_MARK =
+      '<svg viewBox="0 0 24 24" focusable="false"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>';
+    var btn = mod.createScanButton({
+      label: 'Download for macOS',
+      variant: 'one',
+      accentColor: tok('--cta', '#c62a3e'),
+      lineColor: '#ffffff',
+      textColor: tok('--cta-fg', '#ffffff'),
+      fontFamily: tok('--sans', 'Inter, system-ui, sans-serif'),
+      icon: APPLE_MARK,
+      href: dlBtn.href,
+    });
+    // The module builds its own <a>. Appending that inside #dlBtn would nest
+    // an anchor in an anchor, which is invalid and leaves two links carrying the
+    // same name. Instead the module's element BECOMES #dlBtn: it takes the id
+    // and the layout class, and the placeholder anchor is replaced outright. The
+    // fallback href in the markup is still what seeds it, so bumping that on
+    // release still works.
+    btn.element.removeAttribute('target');
+    btn.element.removeAttribute('rel');
+    btn.element.id = 'dlBtn';
+    btn.element.classList.add('dl-btn');
+    btn.element.setAttribute('aria-label', 'Download for macOS');
+    dlBtn.replaceWith(btn.element);
+    dlBtn = btn.element;
+    // The CTA reveal below runs synchronously, long before this import resolves,
+    // so it landed on the placeholder anchor we have just replaced. Carry the
+    // state over or the button stays at opacity 0.
+    dlBtn.classList.add('visible');
+    window.mitsumeruScanButton = btn;
+  });
+  var dlCardArm = document.getElementById('dlCardArm');
+  var dlCardIntel = document.getElementById('dlCardIntel');
+  var rows = [];
+  var lineIdx = 0;
+
+  // SOUND
+  var AudioCtx = window.AudioContext || window.webkitAudioContext;
+  var audioCtx = null;
+  var soundOn = true;
+  var typeSoundOn = false;
+  var soundBtn = document.getElementById('soundToggle');
+  var iconOn = soundBtn.querySelector('.icon-sound-on');
+  var iconOff = soundBtn.querySelector('.icon-sound-off');
+
+  function ensureAudio() {
+    if (!audioCtx) audioCtx = new AudioCtx();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function playKeyClick() {
+    if (!typeSoundOn || !audioCtx) return;
+    var now = audioCtx.currentTime;
+    var bufSize = audioCtx.sampleRate * 0.015;
+    var buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+    var data = buf.getChannelData(0);
+    for (var i = 0; i < bufSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 8) * 0.15;
+    }
+    var src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    var hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 3000;
+    src.connect(hp).connect(audioCtx.destination);
+    src.start(now);
+  }
+  function playLineBreak() {
+    if (!typeSoundOn || !audioCtx) return;
+    var now = audioCtx.currentTime;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 800;
+    gain.gain.setValueAtTime(0.04, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  }
+  soundBtn.addEventListener('click', function () {
+    ensureAudio();
+    soundOn = !soundOn;
+    iconOn.style.display = soundOn ? '' : 'none';
+    iconOff.style.display = soundOn ? 'none' : '';
+    var vid = document.getElementById('heroVideo');
+    if (vid) vid.muted = !soundOn;
+  });
+
+  // TYPEWRITER
+  function getWords(line) {
+    var words = [];
+    line.parts.forEach(function (p) {
+      var chunks = p.t.split(/(\s+)/);
+      chunks.forEach(function (c) { if (c.length > 0) words.push({ text: c, cls: p.c }); });
+    });
+    return words;
+  }
+  function typeWord(row, word) {
+    var existing = row.querySelector('.cursor');
+    if (existing) existing.remove();
+    var span = document.createElement('span');
+    if (word.cls) span.className = word.cls;
+    span.textContent = word.text;
+    row.appendChild(span);
+    var cur = document.createElement('span');
+    cur.className = 'cursor';
+    row.appendChild(cur);
+  }
+  function scrollOldest() {
+    if (rows.length <= MAX_ROWS) return;
+    var oldest = rows.shift();
+    oldest.remove();
+  }
+  function typeLine(cb) {
+    if (lineIdx >= lines.length) { cb(); return; }
+    var line = lines[lineIdx];
+    var row = document.createElement('div');
+    row.className = 'terminal-row';
+    termEl.appendChild(row);
+    rows.push(row);
+    lineIdx++;
+    scrollOldest();
+
+    var words = getWords(line);
+    var wi = 0;
+    (function nextWord() {
+      if (wi >= words.length) {
+        var cur = row.querySelector('.cursor');
+        if (cur) cur.remove();
+        playLineBreak();
+        setTimeout(cb, LINE_PAUSE);
+        return;
+      }
+      typeWord(row, words[wi]);
+      playKeyClick();
+      wi++;
+      setTimeout(nextWord, WORD_DELAY);
+    })();
+  }
+  function drainRows() {
+    if (rows.length <= 1) return;
+    var oldest = rows.shift();
+    oldest.remove();
+    setTimeout(drainRows, 500);
+  }
+  function runLoop() {
+    typeLine(function () {
+      if (lineIdx < lines.length) runLoop();
+      else drainRows();
+    });
+  }
+
+  // The CTA is on screen from the start. It used to fade in after 1.2s, which put
+  // the one thing a visitor came to do behind a delay.
+  dlBtn.classList.add('visible');
+  // The label is set by the scan-button module; keep the release fetch from
+  // overwriting it with a bare text node that would sit beside the button.
+
+  var soundActivated = false;
+  function activateSound() {
+    if (soundActivated) return;
+    soundActivated = true;
+    typeSoundOn = true;
+    ensureAudio();
+    document.removeEventListener('click', activateSound);
+    document.removeEventListener('touchstart', activateSound);
+    document.removeEventListener('keydown', activateSound);
+  }
+  document.addEventListener('click', activateSound);
+  document.addEventListener('touchstart', activateSound);
+  document.addEventListener('keydown', activateSound);
+
+  setTimeout(runLoop, 800);
+
+
+
+  // ─── SMOOTH SCROLL ───
+  // The deceleration on the reference is Lenis (bundled in Framer's runtime),
+  // default `lerp: 0.1` — each frame closes 10% of the remaining distance to the
+  // target, so the position eases into wherever the wheel left it.
+  //
+  // Lenis's own technique is a transformed content wrapper with `body{position:fixed}`.
+  // That is NOT used here, deliberately: this page has two `position:sticky` panels
+  // and two `position:fixed` elements (the hero video is absolute, but the rail and
+  // the modal are fixed). A transform on an ancestor makes `fixed` resolve against
+  // the transformed box instead of the viewport, so the rail and modal would break.
+  // This keeps the real document scroll and eases `window.scrollTo` instead, which
+  // leaves sticky, fixed, and getBoundingClientRect() all behaving normally.
+  //
+  // Touch is deliberately NOT smoothed: iOS/Android already have native momentum,
+  // and `preventDefault` on touchmove is both unreliable and hostile to the user.
+  (function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (window.matchMedia('(pointer: coarse)').matches) return;   // leave touch alone
+
+    var LERP = 0.1;          // Lenis default
+    var target = window.scrollY || window.pageYOffset || 0;
+    var current = target;
+    var running = false;
+    var animating = false;
+
+    function maxScroll() {
+      return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    }
+    function clamp(v) { return Math.max(0, Math.min(v, maxScroll())); }
+
+    function frame() {
+      current += (target - current) * LERP;
+      if (Math.abs(target - current) < 0.5) {
+        current = target;
+        running = false;
+      }
+      window.scrollTo(0, current);
+      if (running) requestAnimationFrame(frame);
+      else animating = false;
+    }
+    function kick() {
+      if (running) return;
+      running = true;
+      requestAnimationFrame(frame);
+    }
+
+    window.addEventListener('wheel', function (e) {
+      // Leave pinch-zoom and horizontal gestures to the browser.
+      if (e.ctrlKey || e.metaKey || e.defaultPrevented) return;
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      animating = true;
+      target = clamp(target + e.deltaY);
+      kick();
+    }, { passive: false });
+
+    // A dragged scrollbar, Find-in-page, or a restored position moves the page
+    // without the wheel. If the real position is far from where the animation
+    // believes it is, resync instead of fighting it.
+    window.addEventListener('scroll', function () {
+      if (animating) return;
+      var real = window.scrollY || 0;
+      if (Math.abs(real - current) > 4) { target = current = real; }
+    }, { passive: true });
+
+    // Keyboard, which a wheel-only hijack would otherwise break.
+    window.addEventListener('keydown', function (e) {
+      var step = window.innerHeight * 0.12;
+      var d = 0;
+      if (e.key === 'ArrowDown') d = step;
+      else if (e.key === 'ArrowUp') d = -step;
+      else if (e.key === 'PageDown' || e.key === ' ') d = window.innerHeight * 0.9;
+      else if (e.key === 'PageUp') d = -window.innerHeight * 0.9;
+      else if (e.key === 'Home') { animating = true; target = 0; kick(); return; }
+      else if (e.key === 'End') { animating = true; target = maxScroll(); kick(); return; }
+      else return;
+      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      e.preventDefault();
+      animating = true;
+      target = clamp(target + d);
+      kick();
+    });
+
+    window.addEventListener('resize', function () { target = current = clamp(current); });
+  })();
+
+  // PAGE PROGRESS RAIL
+  // The rail is a RULER with FIVE marks, one per section: 00 hero, 01–03 the three
+  // scrolly panels, 04 download. A static scale, one needle that travels down it as
+  // the page scrolls, and a small static marker at the midpoint as the reading
+  // point. Exactly one mark is lit, to say which one the needle has reached.
+  //
+  // Progress is interpolated between the five sections' CENTRES in document
+  // coordinates. Not from any element's own rect: the scrolly panels are sticky and
+  // all report the same rect once pinned, so a nearest-to-centre test ties and
+  // always resolves to the first one. Only the centres give a continuous 0..1
+  // across the whole page.
+  //
+  // Because the smooth scroll keeps easing after the wheel stops, scrollY keeps
+  // changing and the needle keeps moving — which is what makes the motion carry on
+  // after the finger lifts.
+  (function () {
+    var rail = document.querySelector('.rail');
+    if (!rail) return;
+    var groups = Array.prototype.slice.call(document.querySelectorAll('.rail-group'));
+    var needle = document.getElementById('railNeedle');
+    if (!groups.length) return;
+
+    // The five marks, one per section, in order. A section missing from the page
+    // simply drops out, so the marks stay in step with what is actually there.
+    var heroEl = document.querySelector('.hero');
+    var blockEls = document.querySelectorAll('.block[data-panel]');
+    var dlEl = document.getElementById('download');
+    var sections = [];
+    if (heroEl) sections.push(heroEl);
+    for (var b = 0; b < blockEls.length; b++) sections.push(blockEls[b]);
+    if (dlEl) sections.push(dlEl);
+    if (sections.length < 2) return;
+
+    function centerDoc(el) {
+      var r = el.getBoundingClientRect();
+      return r.top + (window.scrollY || window.pageYOffset || 0) + r.height / 2;
+    }
+
+    function render() {
+      var vh = window.innerHeight || 1;
+      var centerNow = (window.scrollY || window.pageYOffset || 0) + vh / 2;
+      var n = groups.length;
+
+      // Recomputed every frame, so a resize or a late-loading element cannot
+      // desync the needle.
+      var centers = [];
+      for (var s = 0; s < sections.length; s++) centers.push(centerDoc(sections[s]));
+
+      // 0 at the first section's centre, 1 at the last's.
+      var p;
+      if (centerNow <= centers[0]) {
+        p = 0;
+      } else if (centerNow >= centers[centers.length - 1]) {
+        p = 1;
+      } else {
+        p = 0;
+        for (var i = 0; i < centers.length - 1; i++) {
+          if (centerNow >= centers[i] && centerNow <= centers[i + 1]) {
+            var span = centers[i + 1] - centers[i];
+            var t = span > 0 ? (centerNow - centers[i]) / span : 0;
+            p = (i + t) / (centers.length - 1);
+            break;
+          }
+        }
+      }
+
+      // Which mark has the needle reached. One is lit at a time; the ones before
+      // and after it sit at their resting state, so the lit one is unambiguous.
+      var idx = Math.round(p * (n - 1));
+      for (var g = 0; g < n; g++) groups[g].classList.toggle('on', g === idx);
+
+      // The needle travels to the scale's right, clear of the numbers. Travel is
+      // read off the scale itself so a spacing change cannot desync it.
+      var travel = groups[n - 1].offsetTop - groups[0].offsetTop;
+      if (needle) {
+        needle.style.transform = 'translate3d(0,' + (p * travel - travel / 2).toFixed(1) + 'px,0)';
+      }
+
+      // The rail is a page-level progress scale now, so it is not confined to the
+      // scrolly section — it shows on the hero (00) and on the download (04) too.
+      rail.classList.add('live');
+    }
+
+    var ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () { render(); ticking = false; });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    render();
+  })();
+
+  // Entrance, from the animate-entrance recipe: fade + rise on first scroll-in,
+  // staggered, and skipped entirely when the user has asked for less motion.
+  (function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      var els = document.querySelectorAll('.reveal');
+      for (var r = 0; r < els.length; r++) els[r].classList.add('in');
+      return;
+    }
+    if (!('IntersectionObserver' in window)) return;
+    var seen = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var el = e.target;
+        var sibs = el.parentNode.querySelectorAll('.reveal');
+        var idx = Array.prototype.indexOf.call(sibs, el);
+        el.style.transitionDelay = Math.min(idx * 0.12, 0.36) + 's';
+        el.classList.add('in');
+        seen.unobserve(el);
       });
-    </script>
-  </body>
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    var revealed = document.querySelectorAll('.reveal');
+    for (var k = 0; k < revealed.length; k++) seen.observe(revealed[k]);
+  })();
+
+  // PARTICLE GRID
+  var canvas = document.getElementById('particleCanvas');
+  var ctx = canvas.getContext('2d');
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var SPACING = 5, DOT_R = 0.6, REPEL_R = 80, REPEL_FORCE = 2.5, RETURN_SPEED = 0.08;
+  var w, h, cols, rows2, total, ox, oy, tx, ty2;
+  var mouseX = -9999, mouseY = -9999;
+
+  function resize() {
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cols = Math.ceil(w / SPACING) + 1;
+    rows2 = Math.ceil(h / SPACING) + 1;
+    total = cols * rows2;
+    ox = new Float32Array(total); oy = new Float32Array(total);
+    tx = new Float32Array(total); ty2 = new Float32Array(total);
+    var idx = 0;
+    for (var r = 0; r < rows2; r++) {
+      for (var c = 0; c < cols; c++) {
+        var x = c * SPACING, y = r * SPACING;
+        ox[idx] = x; oy[idx] = y; tx[idx] = x; ty2[idx] = y;
+        idx++;
+      }
+    }
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  document.addEventListener('mousemove', function (e) { mouseX = e.clientX; mouseY = e.clientY; });
+  document.addEventListener('mouseleave', function () { mouseX = -9999; mouseY = -9999; });
+
+  var rr = REPEL_R * REPEL_R;
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = 'rgba(240,240,242,0.3)';
+    ctx.beginPath();
+    for (var i = 0; i < total; i++) {
+      ctx.moveTo(ox[i] + DOT_R, oy[i]);
+      ctx.arc(ox[i], oy[i], DOT_R, 0, 6.2832);
+    }
+    ctx.fill();
+  }
+  function tick() {
+    for (var i = 0; i < total; i++) {
+      var dx = ox[i] - mouseX, dy = oy[i] - mouseY;
+      var d2 = dx * dx + dy * dy;
+      if (d2 < rr && d2 > 0) {
+        var d = Math.sqrt(d2);
+        var f = (1 - d / REPEL_R) * REPEL_FORCE;
+        tx[i] = ox[i] + (dx / d) * f * SPACING;
+        ty2[i] = oy[i] + (dy / d) * f * SPACING;
+      } else {
+        tx[i] = ox[i]; ty2[i] = oy[i];
+      }
+      ox[i] += (tx[i] - ox[i]) * RETURN_SPEED;
+      oy[i] += (ty2[i] - oy[i]) * RETURN_SPEED;
+    }
+    draw();
+    requestAnimationFrame(tick);
+  }
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) requestAnimationFrame(tick);
+  else draw();
+
+  // RELEASES
+  // The hero CTA and the two build cards carry hand-written fallback URLs for when
+  // this fetch fails (offline, rate-limited, blocked). They are the one thing that
+  // silently goes stale, so bump all three on release. The arm64 and Intel files
+  // differ only by the -arm64 token: a copy-paste that misses it makes the Intel
+  // card serve the Apple Silicon build.
+  //
+  // Architecture comes from UA Client Hints, which only Chromium exposes and only
+  // asynchronously. Safari reports "MacIntel" on Apple Silicon too, so an
+  // unclassifiable visitor gets arm64 with Intel one click away.
+  var HOST_IS_INTEL = false;
+  var ARM_DMG_RE = /arm64\.dmg$/i;
+  var INTEL_DMG_RE = /^Mitsumeru-[\d.]+\.dmg$/i;
+  var INTEL_ZIP_RE = /^Mitsumeru-[\d.]+-mac\.zip$/i;
+  var PLATFORMS = [
+    { title:"macOS Apple Silicon DMG", re:ARM_DMG_RE,                icon:"apple" },
+    { title:"macOS Intel DMG",         re:INTEL_DMG_RE,              icon:"apple" },
+    { title:"macOS Apple Silicon ZIP", re:/arm64.*\.zip$/i,          icon:"apple" },
+    { title:"macOS Intel ZIP",         re:INTEL_ZIP_RE,              icon:"apple" },
+    { title:"Linux arm64 AppImage",    re:/linux.*arm64.*appimage/i, icon:"linux" },
+    { title:"Linux x64 AppImage",      re:/linux.*x64.*appimage$/i,  icon:"linux" },
+    { title:"Linux arm64 deb",         re:/linux.*arm64.*\.deb$/i,   icon:"linux" },
+    { title:"Linux x64 deb",           re:/linux.*x64.*\.deb$/i,     icon:"linux" }
+  ];
+  // MAC_ARM_RE is a REFERENCE to the table entry, not a second literal of the same
+  // source: buildModal matches the recommended row back by identity (p.re === recRe),
+  // and two regex literals with identical source are distinct objects, so a rewrite
+  // here makes that lookup fail on .title and leaves the modal half-built.
+  var MAC_ARM_RE = PLATFORMS[0].re;
+  var MAC_INTEL_RE = PLATFORMS[1].re;
+  var ICONS = {
+    apple: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18.7 10.7c-.1-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.7-.8-2.8-.7-1.4.1-2.8.8-3.5 2.1-1.5 2.5-.4 6.2 1.1 8.3.7 1 1.6 2.1 2.7 2.1 1.1-.1 1.5-.7 2.8-.7 1.3 0 1.6.7 2.8.7 1.1 0 1.9-1 2.6-2 .8-1.1 1.1-2.2 1.1-2.3 0-.1-2.1-.8-2.1-3.3zM16.3 4.6c.6-.7 1-1.7.9-2.7-.8 0-1.9.6-2.5 1.3-.6.6-1.1 1.7-.9 2.7 1 .1 1.9-.5 2.5-1.3z"/></svg>',
+    linux: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8 2 4 4 4 8c0 2 1 4 3 5v3a2 2 0 002 2h6a2 2 0 002-2v-3c2-1 3-3 3-5 0-4-4-6-8-6z"/><path d="M9 11h.01M15 11h.01"/></svg>'
+  };
+  var DL_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  var OVERLAY = document.getElementById('dlModal'), ROWS = document.getElementById('modalRows');
+  var VROWS = document.getElementById('modalVersionRows'), VSEC = document.getElementById('modalVersions');
+  var RELEASES = [];
+  var factVersion = document.getElementById('factVersion');
+  var factDate = document.getElementById('factDate');
+  var factHost = document.getElementById('factHost');
+
+  function findAsset(a, re) { for (var i=0;i<a.length;i++) if (re.test(a[i].name)) return a[i]; return null; }
+  function fmtBytes(n) {
+    if (!n) return '';
+    if (n>1e9) return (n/1e9).toFixed(1).replace(/\.0$/,'')+' GB';
+    if (n>1e6) return (n/1e6).toFixed(0)+' MB';
+    return (n/1e3).toFixed(0)+' KB';
+  }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+  }
+
+  function openModal() {
+    OVERLAY.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (RELEASES.length) buildModal(RELEASES); else buildFallback();
+  }
+  function closeModal() {
+    OVERLAY.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  // The API can fail: offline, rate-limited (60 req/h per IP), or blocked. The hero
+  // CTA already carries a known-good URL, so degrade to it rather than presenting a
+  // panel full of em-dash placeholders.
+  function buildFallback() {
+    var href = dlBtn.href;
+    var title = ARM_DMG_RE.test(href) ? 'macOS Apple Silicon DMG' : 'macOS Intel DMG';
+    document.getElementById('modalRec').classList.remove('hidden');
+    document.getElementById('recTitle').textContent = title;
+    document.getElementById('recFile').textContent = href.split('/').pop();
+    document.getElementById('recSize').textContent = '';
+    document.getElementById('recHash').textContent = '\u2014';
+    document.getElementById('recDlBtn').href = href;
+    ROWS.innerHTML = ''; VSEC.style.display = 'none';
+  }
+  function buildModal(rels) {
+    var latest = rels[0];
+    if (!latest) return;
+    var assets = latest.assets || [];
+    var recRe = (HOST_IS_INTEL && findAsset(assets, MAC_INTEL_RE)) ? MAC_INTEL_RE : MAC_ARM_RE;
+    var rec = findAsset(assets, recRe);
+    var rp = document.getElementById('modalRec');
+    if (rec) {
+      rp.classList.remove('hidden');
+      document.getElementById('recTitle').textContent = PLATFORMS.find(function(p){return p.re===recRe}).title;
+      document.getElementById('recFile').textContent = rec.name;
+      document.getElementById('recSize').textContent = fmtBytes(rec.size);
+      var btn = document.getElementById('recDlBtn');
+      btn.href = rec.browser_download_url;
+      btn._hash = (rec.digest || '').replace('sha256:', '');
+      var h = btn._hash;
+      document.getElementById('recHash').textContent = h.slice(0,16) + (h.length>16?'...':'');
+    } else rp.classList.add('hidden');
+
+    ROWS.innerHTML = '';
+    PLATFORMS.forEach(function (p) {
+      var a = findAsset(assets, p.re);
+      if (!a) return;
+      if (rec && p.re === recRe) return;
+      var r = document.createElement('a');
+      r.className = 'modal-row'; r.href = a.browser_download_url;
+      r.innerHTML = '<span class="row-icon">'+ICONS[p.icon]+'</span><span class="row-text"><span class="row-title">'+p.title+'</span><span class="row-file">'+a.name+'</span></span><span class="row-dl">'+DL_ICON+'</span>';
+      ROWS.appendChild(r);
+    });
+
+    VROWS.innerHTML = '';
+    var prior = rels.slice(1);
+    if (prior.length) {
+      VSEC.style.display = '';
+      prior.forEach(function (rel) {
+        var hdr = document.createElement('div');
+        hdr.style.cssText = 'margin:16px 0 8px;font-size:13px;color:var(--muted-fg);font-weight:600;letter-spacing:0.04em';
+        hdr.textContent = rel.name || rel.tag_name;
+        VROWS.appendChild(hdr);
+        (rel.assets || []).forEach(function (a) {
+          // Only list installable artifacts. A release also carries .blockmap files
+          // and dev-mac.yml; without this filter they render as download rows.
+          var re2 = PLATFORMS.find(function(p){ return p.re.test(a.name); });
+          if (!re2) return;
+          var r2 = document.createElement('a');
+          r2.className = 'modal-row'; r2.href = a.browser_download_url;
+          r2.innerHTML = '<span class="row-icon">'+ICONS[re2.icon]+'</span><span class="row-text"><span class="row-title">'+re2.title+'</span><span class="row-file">'+a.name+' ('+fmtBytes(a.size)+')</span></span><span class="row-dl">'+DL_ICON+'</span>';
+          VROWS.appendChild(r2);
+        });
+      });
+    } else VSEC.style.display = 'none';
+  }
+
+  OVERLAY.addEventListener('click', function(e){ if (e.target === OVERLAY) closeModal(); });
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && OVERLAY.classList.contains('open')) closeModal(); });
+  document.getElementById('dlHeaderBtn').addEventListener('click', openModal);
+  document.getElementById('dlAll').addEventListener('click', openModal);
+  document.getElementById('copyHash').addEventListener('click', function () {
+    var btn = this, h = document.getElementById('recDlBtn')._hash || '';
+    if (!h) return;
+    navigator.clipboard.writeText(h).then(function () {
+      btn.textContent = 'Copied'; btn.classList.add('copied');
+      setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  });
+
+  // The live row and the build cards.
+  (async function () {
+    try {
+      if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+        var hv = await navigator.userAgentData.getHighEntropyValues(['architecture']);
+        HOST_IS_INTEL = /x86/i.test(hv.architecture || '');
+      }
+    } catch (e) {}
+    factHost.textContent = HOST_IS_INTEL ? 'macOS Intel' : 'macOS Apple Silicon';
+    try {
+      var r = await fetch('https://api.github.com/repos/muen-collective/mitsumeru-app/releases?per_page=5', { headers: { accept: 'application/vnd.github+json' } });
+      if (!r.ok) return;
+      RELEASES = await r.json();
+      var latest = RELEASES[0];
+      if (!latest) return;
+      var assets = latest.assets || [];
+
+      // The live cells. These are the release's own values, never a count we made up.
+      factVersion.textContent = latest.tag_name || '\u2014';
+      factVersion.classList.remove('idle');
+      factDate.textContent = fmtDate(latest.published_at) || '\u2014';
+      factDate.classList.remove('idle');
+
+      var a = findAsset(assets, HOST_IS_INTEL ? INTEL_DMG_RE : ARM_DMG_RE) || findAsset(assets, ARM_DMG_RE);
+      if (a) {
+        dlBtn.href = a.browser_download_url;
+        if (window.mitsumeruScanButton) window.mitsumeruScanButton.element.href = a.browser_download_url;
+      }
+
+      // Point each card at its exact asset rather than at whatever the hero
+      // resolved, so the Intel card cannot silently serve the arm64 file.
+      var armAsset = findAsset(assets, ARM_DMG_RE), intelAsset = findAsset(assets, INTEL_DMG_RE);
+      if (armAsset && dlCardArm) {
+        dlCardArm.href = armAsset.browser_download_url;
+        dlCardArm.querySelector('.bf').textContent = armAsset.name + ' \u00b7 ' + fmtBytes(armAsset.size);
+      }
+      if (intelAsset && dlCardIntel) {
+        dlCardIntel.href = intelAsset.browser_download_url;
+        dlCardIntel.querySelector('.bf').textContent = intelAsset.name + ' \u00b7 ' + fmtBytes(intelAsset.size);
+      } else if (dlCardIntel) {
+        // No Intel build in this release: drop the card rather than offer a
+        // download that resolves to the wrong architecture.
+        dlCardIntel.remove();
+      }
+    } catch (e) {}
+  })();
+})();
+</script>
+
+<script type="module">
+  // The object in the scrolly section. One shape, three stage positions: it
+  // holds, collapses to a dot as you cross between the panels, and expands
+  // again with the overshoot. Driven by scroll position alone, so it runs
+  // backwards cleanly. Coloured from the page's own object, not a new accent.
+  import { createShapeMorph } from './src/shape-morph.js';
+
+  var morphStage = document.getElementById('morphStage');
+  var sections = document.querySelectorAll('.block[data-panel]');
+  if (morphStage) {
+    createShapeMorph(morphStage, {
+      sections: sections,
+      onStage: function (stage, index) {
+        sections.forEach(function (el, i) { el.classList.toggle('is-active', i === index); });
+      },
+      settings: {
+        color: [5, 232, 224],
+        colorFar: [8, 74, 96],
+        coreColor: [214, 255, 253],
+        scale: 0.32,
+        holdZone: 0.35,
+        collapseShare: 0.4,
+        expandEase: 'gentle',
+        smoothing: 6,
+      },
+    });
+  }
+
+  // The composer loop. Decorative, so the stage is aria-hidden; the surfaces it
+  // shows are the real ones and the status copy is the shipped label.
+  (function () {
+    var status = document.querySelector('.cx-status');
+    var working = document.querySelector('.cx-working');
+    var question = document.querySelector('.cx-question');
+    var composer = document.querySelector('.cx-composer');
+    var typed = document.getElementById('cxTyped');
+    if (!status || !working || !question || !composer || !typed) return;
+
+    var PROMPT = 'Convert the components in my website into a reusable design system';
+    var REST = 'Message or run a task, / commands, @ files or sessions';
+
+    function rest() {
+      typed.textContent = REST;
+      typed.className = 'cx-ph';
+      composer.classList.remove('typing');
+    }
+    function say(text) {
+      typed.textContent = text;
+      typed.className = '';
+    }
+    function sleep(ms) {
+      return new Promise(function (r) { setTimeout(r, ms); });
+    }
+
+    rest();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      say(PROMPT);
+      status.classList.add('on');
+      working.classList.add('on');
+      question.classList.add('on');
+      return;
+    }
+
+    async function type() {
+      say('');
+      composer.classList.add('typing');
+      for (var i = 0; i < PROMPT.length; i++) {
+        say(PROMPT.slice(0, i + 1));
+        await sleep(24 + Math.random() * 26);
+      }
+      composer.classList.remove('typing');
+      await sleep(520);
+    }
+
+    (async function run() {
+      for (;;) {
+        rest();
+        status.classList.remove('on');
+        working.classList.remove('on');
+        question.classList.remove('on');
+        await sleep(900);
+
+        await type();
+
+        rest();                 // sent: the composer clears back to its placeholder
+        await sleep(340);
+        status.classList.add('on');       // "Staring intently..."
+        await sleep(1200);
+        status.classList.remove('on');
+        working.classList.add('on');      // "Working..."
+        await sleep(1500);
+        working.classList.remove('on');
+        question.classList.add('on');     // poll component appears
+        await sleep(7000);
+      }
+    })();
+  })();
+</script>
+</body>
 </html>
