@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ASCII Water Reveal — background preview</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        color: #f2f0ea;
+        font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      /* the background itself */
+      #bg {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+      }
+
+      /* content sits above it */
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: 62ch;
+        margin: 0 auto;
+        padding: 22vh 24px 30vh;
+      }
+
+      h1 {
+        font-size: 40px;
+        line-height: 1.1;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        margin: 0 0 16px;
+      }
+
+      p {
+        margin: 0 0 16px;
+        color: #b9b6ae;
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+
+      /* the tuning panel */
+      aside {
+        position: fixed;
+        right: 16px;
+        top: 16px;
+        z-index: 2;
+        width: 236px;
+        max-height: calc(100vh - 32px);
+        overflow: auto;
+        padding: 14px;
+        border-radius: 12px;
+        background: rgba(18, 18, 18, 0.72);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      aside h2 {
+        margin: 0 0 10px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: #8a8781;
+      }
+
+      label {
+        display: block;
+        margin: 0 0 9px;
+        font-size: 11px;
+        color: #a5a29b;
+      }
+
+      label span {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3px;
+      }
+
+      label b {
+        font-weight: 500;
+        color: #f2f0ea;
+        font-variant-numeric: tabular-nums;
+      }
+
+      input[type='range'] {
+        width: 100%;
+        margin: 0;
+        accent-color: #87bbff;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 9px;
+        font-size: 11px;
+        color: #a5a29b;
+      }
+
+      .row input {
+        accent-color: #87bbff;
+      }
+
+      button {
+        width: 100%;
+        padding: 7px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        color: #f2f0ea;
+        font: inherit;
+        font-size: 11px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bg"></div>
+
+    <main>
+      <h1>ASCII Water Reveal</h1>
+      <p>
+        A height-field wave simulation on a coarse grid. Every cell above a small threshold draws one
+        ASCII glyph, so a moving pointer stirs the surface and the ripples read as trails of
+        characters.
+      </p>
+      <p>
+        The physics is the classic string equation: each cell moves toward the mean of its four
+        neighbours, with damping. The glyph picks its brightness from that height.
+      </p>
+      <p>
+        Move or press the pointer over the canvas. Faster movement makes bigger, brighter ripples.
+      </p>
+      <p>
+        Drop-in usage:
+        <code>createAsciiWaterReveal(el, { settings })</code>
+        — it returns a handle with <code>stop()</code>, a live
+        <code>settings</code> object, and <code>stir()</code> / <code>drop()</code> for driving it
+        from code.
+      </p>
+    </main>
+
+    <aside>
+      <h2>Settings</h2>
+      <div id="controls"></div>
+      <button id="reset">Reset</button>
+    </aside>
+
+    <script type="module">
+      import { createAsciiWaterReveal, DEFAULTS } from './src/ascii-water-reveal.js';
+
+      const settings = { ...DEFAULTS };
+
+      // These match the values on the Code Reveal demo page.
+      Object.assign(settings, {
+        fontSize: 13,
+        density: 1,
+        damping: 0.96,
+        waveSpeed: 0.48,
+        maxOpacity: 0.35,
+        intensity: 1,
+      });
+
+      const scene = createAsciiWaterReveal(document.getElementById('bg'), { settings });
+
+      const sliders = [
+        ['fontSize', 'Font size', 8, 24, 1],
+        ['density', 'Density', 0.6, 1.5, 0.1],
+        ['damping', 'Fluidity', 0.85, 0.99, 0.01],
+        ['waveSpeed', 'Wave speed', 0.1, 0.5, 0.01],
+        ['maxOpacity', 'Opacity', 0.05, 1, 0.05],
+        ['intensity', 'Intensity', 0, 2, 0.05],
+      ];
+
+      const controls = document.getElementById('controls');
+
+      for (const [key, label, min, max, step] of sliders) {
+        const wrap = document.createElement('label');
+        wrap.innerHTML = `<span>${label}<b></b></span>`;
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = min;
+        input.max = max;
+        input.step = step;
+        input.value = settings[key];
+        const readout = wrap.querySelector('b');
+        readout.textContent = settings[key];
+        input.addEventListener('input', () => {
+          const v = parseFloat(input.value);
+          settings[key] = key === 'fontSize' ? Math.round(v) : v;
+          readout.textContent = settings[key];
+        });
+        wrap.appendChild(input);
+        controls.appendChild(wrap);
+      }
+
+      const dropWrap = document.createElement('div');
+      dropWrap.className = 'row';
+      const dropBtn = document.createElement('button');
+      dropBtn.textContent = 'Drop in the middle';
+      dropBtn.addEventListener('click', () => {
+        const rect = scene.canvas.getBoundingClientRect();
+        scene.drop(rect.width / 2, rect.height / 2, 6, 8);
+      });
+      dropWrap.appendChild(dropBtn);
+      controls.appendChild(dropWrap);
+
+      document.getElementById('reset').addEventListener('click', () => location.reload());
+    </script>
+  </body>
+</html>

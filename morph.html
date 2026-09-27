@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mitsumeru — one object, three forms</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #000;
+        color: #f2f0ea;
+        font: 15px/1.6 -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* the object, pinned to the right of the scroll sections */
+      #stage {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 52vw;
+        height: 100vh;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+        width: min(44vw, 560px);
+        margin-left: clamp(24px, 5vw, 96px);
+      }
+
+      section {
+        height: 132vh;
+        position: relative;
+      }
+
+      .panel {
+        position: sticky;
+        top: 38vh;
+        opacity: 0.32;
+        transition: opacity 0.5s ease;
+      }
+
+      section.is-active .panel {
+        opacity: 1;
+      }
+
+      .num {
+        display: block;
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        color: #05e8e0;
+        margin-bottom: 14px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      h2 {
+        margin: 0 0 12px;
+        font-size: 34px;
+        line-height: 1.1;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+
+      .panel p {
+        margin: 0;
+        max-width: 34ch;
+        color: #9d9a93;
+      }
+
+      /* section rail */
+      #rail {
+        position: fixed;
+        right: 26px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      #rail span {
+        color: #4a4844;
+        transition: color 0.4s ease;
+      }
+
+      #rail span.is-active {
+        color: #05e8e0;
+      }
+
+      /* tuning panel */
+      #tune {
+        position: fixed;
+        left: 18px;
+        bottom: 18px;
+        z-index: 3;
+        width: 232px;
+        max-height: calc(100vh - 36px);
+        overflow: auto;
+        padding: 14px;
+        border-radius: 12px;
+        background: rgba(16, 18, 18, 0.78);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 11px;
+      }
+
+      #tune[hidden] {
+        display: none;
+      }
+
+      #tune h3 {
+        margin: 0 0 10px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #7d7a74;
+      }
+
+      #tune label {
+        display: block;
+        margin: 0 0 8px;
+        color: #a5a29b;
+      }
+
+      #tune label span {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3px;
+      }
+
+      #tune label b {
+        color: #f2f0ea;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+      }
+
+      #tune input[type='range'] {
+        width: 100%;
+        margin: 0;
+        accent-color: #05e8e0;
+      }
+
+      #tune select {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.06);
+        color: #f2f0ea;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        padding: 4px;
+        font: inherit;
+      }
+
+      #toggle {
+        position: fixed;
+        left: 18px;
+        bottom: 18px;
+        z-index: 4;
+        padding: 7px 11px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(16, 18, 18, 0.78);
+        color: #f2f0ea;
+        font: inherit;
+        font-size: 11px;
+        cursor: pointer;
+      }
+
+      #toggle[hidden] {
+        display: none;
+      }
+
+      @media (max-width: 900px) {
+        #stage {
+          width: 100vw;
+          height: 58vh;
+        }
+        main {
+          width: auto;
+          margin: 0 22px;
+        }
+        section {
+          height: 122vh;
+        }
+        .panel {
+          top: 66vh;
+        }
+        #rail {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+
+    <main>
+      <section data-stage="0">
+        <div class="panel">
+          <span class="num">01</span>
+          <h2>Wireframe</h2>
+          <p>
+            Sixteen points, held together by the shortest lines between them. The edge set is
+            rebuilt every frame, so the shape is only ever whatever the space currently allows.
+          </p>
+        </div>
+      </section>
+
+      <section data-stage="1">
+        <div class="panel">
+          <span class="num">02</span>
+          <h2>Polygon</h2>
+          <p>
+            Twelve corners, thirty edges, twenty faces. A regular icosahedron has nothing left to
+            remove and nothing left to add — back faces fall away into the dark.
+          </p>
+        </div>
+      </section>
+
+      <section data-stage="2">
+        <div class="panel">
+          <span class="num">03</span>
+          <h2>Sphere</h2>
+          <p>
+            The same volume, smoothed past the point where any corner survives. Twenty arcs run
+            pole to pole, each one twisted by its own latitude.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <nav id="rail" aria-hidden="true">
+      <span data-rail="0">01</span>
+      <span data-rail="1">02</span>
+      <span data-rail="2">03</span>
+    </nav>
+
+    <button id="toggle" type="button">Tune</button>
+
+    <aside id="tune" hidden>
+      <h3>Shape morph</h3>
+
+      <label>
+        <span>Stage <b id="v-stage">0.00</b></span>
+        <input id="i-stage" type="range" min="0" max="2" step="0.001" value="0" />
+      </label>
+      <label>
+        <span>Hold <b id="v-hold">0.30</b></span>
+        <input id="i-hold" type="range" min="0" max="0.48" step="0.01" value="0.30" />
+      </label>
+      <label>
+        <span>Collapse share <b id="v-split">0.42</b></span>
+        <input id="i-split" type="range" min="0.15" max="0.8" step="0.01" value="0.42" />
+      </label>
+      <label>
+        <span>Smoothing <b id="v-smooth">14</b></span>
+        <input id="i-smooth" type="range" min="0" max="40" step="1" value="14" />
+      </label>
+      <label>
+        <span>Expand ease</span>
+        <select id="i-ease">
+          <option value="back">back (overshoot)</option>
+          <option value="bounce">bounce</option>
+          <option value="cubic">cubic</option>
+        </select>
+      </label>
+      <label>
+        <span>Scale <b id="v-scale">0.34</b></span>
+        <input id="i-scale" type="range" min="0.12" max="0.6" step="0.01" value="0.34" />
+      </label>
+      <label>
+        <span>Speed <b id="v-speed">1.00</b></span>
+        <input id="i-speed" type="range" min="0" max="3" step="0.05" value="1" />
+      </label>
+      <label>
+        <span>Glow <b id="v-glow">1.00</b></span>
+        <input id="i-glow" type="range" min="0" max="2" step="0.05" value="1" />
+      </label>
+      <label>
+        <span>Points <b id="v-points">16</b></span>
+        <input id="i-points" type="range" min="4" max="60" step="1" value="16" />
+      </label>
+      <label>
+        <span>Arcs <b id="v-arcs">20</b></span>
+        <input id="i-arcs" type="range" min="4" max="60" step="1" value="20" />
+      </label>
+    </aside>
+
+    <script type="module">
+      import { createShapeMorph } from './src/shape-morph.js';
+
+      const sections = [...document.querySelectorAll('section[data-stage]')];
+      const rail = [...document.querySelectorAll('#rail span')];
+
+      const morph = createShapeMorph(document.getElementById('stage'), {
+        sections,
+        onStage: (stage, index) => {
+          sections.forEach((el, i) => el.classList.toggle('is-active', i === index));
+          rail.forEach((el, i) => el.classList.toggle('is-active', i === index));
+        },
+      });
+
+      // --- tuning panel ------------------------------------------------------
+      const panel = document.getElementById('tune');
+      const toggle = document.getElementById('toggle');
+      const stageInput = document.getElementById('i-stage');
+      let manualStage = false;
+
+      toggle.addEventListener('click', () => {
+        panel.hidden = !panel.hidden;
+        toggle.hidden = !panel.hidden;
+      });
+
+      const bind = (id, valueId, key, format, after) => {
+        const input = document.getElementById(id);
+        const out = document.getElementById(valueId);
+        const apply = () => {
+          const raw = Number(input.value);
+          out.textContent = format(raw);
+          morph.settings[key] = raw;
+          after?.(raw);
+        };
+        input.addEventListener('input', apply);
+        apply();
+      };
+
+      bind('i-hold', 'v-hold', 'holdZone', (v) => v.toFixed(2));
+      bind('i-split', 'v-split', 'collapseShare', (v) => v.toFixed(2));
+      bind('i-smooth', 'v-smooth', 'smoothing', (v) => String(v));
+      bind('i-scale', 'v-scale', 'scale', (v) => v.toFixed(2));
+      bind('i-speed', 'v-speed', 'speed', (v) => v.toFixed(2));
+      bind('i-glow', 'v-glow', 'glow', (v) => v.toFixed(2));
+      bind('i-points', 'v-points', 'points', (v) => String(v));
+      bind('i-arcs', 'v-arcs', 'arcs', (v) => String(v));
+
+      document.getElementById('i-ease').addEventListener('change', (e) => {
+        morph.settings.expandEase = e.target.value;
+      });
+
+      // The stage slider takes over from scroll until you nudge it back to scroll.
+      stageInput.addEventListener('input', () => {
+        manualStage = true;
+        morph.setStage(Number(stageInput.value));
+      });
+
+      window.addEventListener(
+        'wheel',
+        () => {
+          if (!manualStage) return;
+          manualStage = false;
+          morph.releaseStage();
+        },
+        { passive: true },
+      );
+
+      window.morph = morph;
+    </script>
+  </body>
+</html>

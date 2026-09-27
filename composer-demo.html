@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mitsumeru — composer + question card demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ══ EVA 01 dark tokens (@muen/dsh-eva-theme/themes/eva-01.json) ══════ */
+  :root {
+    --bg-base:        #141014;
+    --bg-layer-1:     #0e0d0e;
+    --bg-layer-2:     #2a232a;
+    --bg-layer-3:     #221c22;
+    --bg-overlay:     #2a232a;
+    --input-major:    #141014;
+    --selector:       #221c22;
+
+    --border-l1:      rgba(111, 100, 108, 0.25);
+    --border-l2:      rgba(139, 127, 136, 0.45);
+    --border-l2-thin: rgba(139, 127, 136, 0.3);
+    --border-l3:      rgba(139, 127, 136, 0.55);
+    --border-l4:      rgba(139, 127, 136, 0.7);
+
+    --label-primary:  #f2efee;
+    --label-secondary:#b3a7b0;
+    --label-tertiary: #d8d2d4;
+    --label-caption:  #d8d2d4;
+    --label-fg:       #070607;
+
+    --brand:          #9a4fdb;
+    --brand-hover:    #c084fc;
+    --green:          #3ddc97;
+    --red:            #ff4538;
+    --amber:          #f0b429;
+    --badge-bg:       color-mix(in srgb, #2a232a 25%, #141014);
+
+    --interactive-hover:  rgba(42, 35, 42, 0.45);
+    --interactive-active: rgba(34, 28, 34, 0.55);
+
+    /* DSH layout tokens */
+    --chat-content-width: 748px;
+    --composer-card-max-width: 780px;
+    --composer-side-clearance: 16px;
+    --elevation-panel: 0 0 0 .5px var(--border-l2-thin), 0 3px 8px 0 rgba(0,0,0,.35), 0 0 16px 0 rgba(0,0,0,.3);
+    --elevation-soft:  0 0 0 .5px var(--border-l2), 0 4px 16px 0 rgba(0,0,0,.3), 0 0 24px 0 rgba(0,0,0,.28);
+
+    /* DSH uses the platform stack, not a webfont */
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    min-height: 100%;
+    background: var(--bg-base);
+    color: var(--label-primary);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ── tagline ─────────────────────────────────────────────────────── */
+  .tagline {
+    flex: none;
+    width: 100%;
+    max-width: var(--chat-content-width);
+    margin: 0 auto;
+    padding: 56px 16px 0;
+  }
+  .tagline h2 {
+    font-family: 'Geist', var(--sans);
+    font-size: clamp(24px, 2.2vw, 32px);
+    font-weight: 600;
+    line-height: 34px;
+    letter-spacing: -0.01em;
+    color: var(--label-secondary);
+    max-width: 24ch;
+  }
+  .tagline h2 span { color: var(--label-primary); }
+
+  /* ── conversation column (chat content width) ────────────────────── */
+  .conversation {
+    flex: 1;
+    width: 100%;
+    max-width: var(--chat-content-width);
+    margin: 0 auto;
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 0;
+  }
+
+  /* ── turn status row (ChatGroupSeat) ─────────────────────────────── */
+  .turn-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    color: var(--label-secondary);
+    font-size: 14px;
+    line-height: 22px;
+    opacity: 0;
+    transition: opacity .3s ease;
+  }
+  .turn-row.visible { opacity: 1; }
+
+  .turn-leading {
+    width: 16px; height: 16px;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--label-tertiary);
+  }
+  .turn-leading svg { width: 14px; height: 14px; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .turn-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+  }
+
+  /* TextShimmer primitive — monochrome, currentColor driven */
+  .shimmer[data-text-shimmer] {
+    background-image: linear-gradient(
+      90deg,
+      currentColor calc(50% - var(--shimmer-spread, 120px)),
+      color-mix(in oklab, currentColor 50%, transparent),
+      currentColor calc(50% + var(--shimmer-spread, 120px))
+    );
+    background-position: 100% center;
+    background-repeat: no-repeat;
+    background-size: 250% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: dsh-text-shimmer 1.5s cubic-bezier(0.33, 0, 0.67, 1) infinite;
+  }
+  @keyframes dsh-text-shimmer {
+    66.6667%, 100% { background-position: 0% center; }
+  }
+
+  /* ── dock: question card + composer ──────────────────────────────── */
+  .dock {
+    flex: none;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ══ QuestionComposer (dsh-client-ui-user-questions) ══════════════ */
+  /* display:none while hidden so an unanswered card never reserves height */
+  .q-frame {
+    display: none;
+    justify-content: center;
+    padding: 6px calc(var(--composer-side-clearance) + 16px) 10px;
+  }
+  .q-frame.visible {
+    display: flex;
+    animation: q-frame-in .4s cubic-bezier(.2, .7, .3, 1) both;
+  }
+  @keyframes q-frame-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .q-card {
+    width: 100%;
+    max-width: var(--chat-content-width);
+    background: var(--input-major);
+    --dsw-elevation-stroke-color: var(--border-l2-thin);
+    box-shadow: var(--elevation-panel);
+    color: var(--label-primary);
+    max-height: min(60vh, 520px);
+    border: 0;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 10px;
+    overflow: hidden;
+  }
+
+  .q-header {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 16px 0 24px;
+  }
+  .q-heading { min-width: 0; }
+  .q-eyebrow {
+    color: var(--label-tertiary);
+    font-size: 11px;
+    line-height: 16px;
+    margin-bottom: 5px;
+  }
+  .q-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 22px;
+  }
+  .q-header-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .q-icon-btn {
+    flex: none;
+    width: 24px; height: 24px;
+    border: none;
+    border-radius: 999px;
+    background: none;
+    color: var(--label-tertiary);
+    display: grid;
+    place-items: center;
+    padding: 0;
+    cursor: default;
+  }
+  .q-icon-btn:hover { background: var(--interactive-hover); color: var(--label-primary); }
+  .q-icon-btn svg { width: 14px; height: 14px; }
+
+  .q-body {
+    flex: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .q-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin: 8px 0 0;
+    padding: 4px 12px;
+  }
+  .q-option {
+    width: 100%;
+    min-height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px 8px 8px;
+    text-align: left;
+    color: inherit;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    cursor: default;
+    transition: background-color .12s, border-color .12s;
+  }
+  .q-option:hover { background: var(--interactive-hover); }
+  .q-option.selected {
+    background: var(--interactive-hover);
+    border-color: var(--border-l2);
+  }
+  .q-number {
+    width: 20px; height: 20px;
+    flex: 0 0 20px;
+    margin-top: 2px;
+    display: grid;
+    place-items: center;
+    background: var(--bg-overlay);
+    color: var(--label-secondary);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+  }
+  .q-number svg { width: 12px; height: 12px; }
+  .q-option-copy { flex: 1; min-width: 0; }
+  .q-option-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 6px;
+  }
+  .q-option-label { font-size: 14px; font-weight: 500; line-height: 24px; }
+  .q-badge {
+    background: var(--badge-bg);
+    color: var(--brand);
+    border-radius: 6px;
+    padding: 0 4px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+  }
+  .q-description {
+    color: var(--label-tertiary);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+  }
+  .q-custom-row {
+    width: 100%;
+    min-height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px 8px 8px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+  }
+  .q-field { min-width: 0; display: grid; flex: 1; }
+  .q-field input {
+    min-width: 0;
+    grid-area: 1 / 1;
+    font: inherit;
+    font-size: 14px;
+    line-height: 24px;
+    color: var(--label-primary);
+    background: none;
+    border: none;
+    outline: none;
+  }
+  .q-field input::placeholder { color: var(--label-caption); }
+
+  .q-footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 0 10px 0 18px;
+  }
+  .q-pager { flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+  .q-progress {
+    color: var(--label-secondary);
+    padding: 0 4px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 24px;
+    white-space: nowrap;
+    word-spacing: -2px;
+  }
+  .q-feedback { flex: 1 1 auto; min-width: 0; text-align: right; font-size: 11px; line-height: 16px; color: var(--red); }
+  .q-footer-actions { flex: none; display: flex; align-items: center; gap: 12px; }
+
+  /* Button primitive */
+  .btn {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 36px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 18px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 22px;
+    white-space: nowrap;
+    color: var(--label-primary);
+    background: transparent;
+    cursor: default;
+  }
+  .btn.outline { border: .5px solid var(--border-l3); }
+  .btn.outline:hover { background: var(--interactive-hover); }
+  .btn.primary { background: var(--brand); color: var(--label-fg); }
+  .btn.primary:hover { background: var(--brand-hover); }
+  .btn:disabled { opacity: .4; }
+
+  /* ══ composer card (dsh-client-ui-conversation InputBar) ══════════ */
+  .composer-root {
+    flex: none;
+    width: 100%;
+    padding: 0 var(--composer-side-clearance) 22px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .card {
+    width: 100%;
+    max-width: var(--composer-card-max-width);
+    background: var(--input-major);
+    box-shadow: var(--elevation-soft);
+    border: 0;
+    border-radius: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 8px;
+    font-size: 14px;
+    line-height: 24px;
+    position: relative;
+  }
+
+  .input-wrap { position: relative; }
+  .input {
+    min-height: 52px;
+    padding: 4px 8px 0 14px;
+    color: var(--label-primary);
+    caret-color: var(--brand);
+    outline: none;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .placeholder {
+    position: absolute;
+    inset: 4px 8px auto 14px;
+    color: var(--label-caption);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    user-select: none;
+  }
+  .placeholder .typed { color: var(--label-primary); }
+  .cursor {
+    display: inline-block;
+    width: 1.5px;
+    height: 17px;
+    background: var(--brand);
+    vertical-align: -3px;
+    margin-left: 1px;
+    opacity: 0;
+    animation: blink 1s steps(1) infinite;
+  }
+  .card.typing .cursor { opacity: 1; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 2px 8px 6px;
+  }
+  .tools { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .trailing { flex: none; margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+  /* muted add button — dim circle, green plus */
+  .add {
+    width: 28px; height: 28px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: var(--selector);
+    color: var(--green);
+    cursor: default;
+  }
+  .add:hover { background: var(--bg-layer-2); }
+  .add svg { width: 15px; height: 15px; }
+
+  .ws-trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 6px 0 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--label-secondary);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: default;
+  }
+  .ws-trigger:hover { background: var(--interactive-hover); }
+  .ws-trigger .ws-icon { width: 15px; height: 15px; }
+  .ws-trigger .chev { width: 12px; height: 12px; }
+
+  .model-trigger {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 28px;
+    padding: 0 6px 0 8px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--label-secondary);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: default;
+  }
+  .model-trigger:hover { background: var(--interactive-hover); }
+  .model-trigger .effort { color: var(--green); }
+  .model-trigger .chev { width: 12px; height: 12px; color: var(--label-secondary); }
+
+  .mic {
+    width: 28px; height: 28px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--label-tertiary);
+    cursor: default;
+  }
+  .mic:hover { background: var(--interactive-hover); }
+  .mic svg { width: 17px; height: 17px; }
+
+  .send-btn {
+    width: 34px; height: 34px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: var(--brand);
+    color: #fff;
+    cursor: default;
+    transform: translateY(-2px);
+    transition: background-color .1s, opacity .15s;
+  }
+  .send-btn:hover { background: var(--brand-hover); }
+  .send-btn svg { width: 18px; height: 18px; }
+  /* empty composer → disabled, exactly like DSH */
+  .card.empty .send-btn { opacity: .4; }
+
+  /* ── hint ────────────────────────────────────────────────────────── */
+  .hint {
+    flex: none;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--label-caption);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 0 16px 26px;
+  }
+  .hint b { color: var(--label-secondary); font-weight: 500; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shimmer[data-text-shimmer] { animation: none; background-image: none; -webkit-text-fill-color: currentColor; }
+    .turn-leading svg { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="tagline">
+  <h2>Your team wastes hours pulling data from scattered tools. <span>Mitsumeru turns that into one conversation.</span></h2>
+</div>
+
+<div class="conversation">
+  <!-- turn status row: left justified, monochrome shimmer -->
+  <div class="turn-row" id="statusRow">
+    <span class="turn-leading" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <path d="M12 3a9 9 0 1 0 9 9"/>
+      </svg>
+    </span>
+    <span class="turn-label shimmer" id="statusText">Staring intently…</span>
+  </div>
+</div>
+
+<div class="dock">
+
+  <!-- ══ QuestionComposer card ══════════════════════════════════════ -->
+  <div class="q-frame" id="questionFrame">
+    <section class="q-card" aria-labelledby="q-title">
+
+      <header class="q-header">
+        <div class="q-heading">
+          <div class="q-eyebrow">Run setup</div>
+          <h2 class="q-title" id="q-title">How should I scope this run?</h2>
+        </div>
+        <div class="q-header-actions">
+          <button class="q-icon-btn" aria-label="Collapse the question card">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+          </button>
+          <button class="q-icon-btn" aria-label="Dismiss all questions">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3l6 6M9 3l-6 6"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="q-body">
+        <div class="q-options" role="radiogroup" aria-label="How should I scope this run?">
+
+          <button class="q-option" role="radio" aria-checked="false">
+            <span class="q-number">1</span>
+            <span class="q-option-copy">
+              <span class="q-option-line">
+                <span class="q-option-label">Current workspace</span>
+                <span class="q-badge">Recommended</span>
+                <span class="q-description">Only the files in the open workspace.</span>
+              </span>
+            </span>
+          </button>
+
+          <button class="q-option" role="radio" aria-checked="false">
+            <span class="q-number">2</span>
+            <span class="q-option-copy">
+              <span class="q-option-line">
+                <span class="q-option-label">Workspace + dependencies</span>
+                <span class="q-description">Follows imports into linked packages.</span>
+              </span>
+            </span>
+          </button>
+
+          <button class="q-option" role="radio" aria-checked="false">
+            <span class="q-number">3</span>
+            <span class="q-option-copy">
+              <span class="q-option-line">
+                <span class="q-option-label">Everything on disk</span>
+                <span class="q-description">Scans every mounted volume.</span>
+              </span>
+            </span>
+          </button>
+
+          <div class="q-custom-row">
+            <span class="q-number" aria-hidden="true">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 1.5l2 2L4 10H2V8z"/></svg>
+            </span>
+            <div class="q-field">
+              <input type="text" placeholder="Type your answer" aria-label="Type your answer" />
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <footer class="q-footer">
+        <div class="q-pager">
+          <button class="q-icon-btn" disabled aria-label="Previous question">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 3L4.5 6l3 3"/></svg>
+          </button>
+          <span class="q-progress">1 / 1</span>
+          <button class="q-icon-btn" disabled aria-label="Next question">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 3l3 3-3 3"/></svg>
+          </button>
+        </div>
+        <div class="q-feedback" role="status"></div>
+        <div class="q-footer-actions">
+          <button class="btn outline">Skip</button>
+          <button class="btn primary" disabled>Submit</button>
+        </div>
+      </footer>
+
+    </section>
+  </div>
+
+  <!-- ══ composer ═══════════════════════════════════════════════════ -->
+  <div class="composer-root">
+    <div class="card empty" id="card">
+
+      <div class="input-wrap">
+        <div class="input" id="input" contenteditable="true"></div>
+        <div class="placeholder" id="placeholder">Message or run a task, / commands, @ files or sessions</div>
+      </div>
+
+      <div class="row">
+        <div class="tools">
+          <button class="add" aria-label="Add">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <button class="ws-trigger">
+            <svg class="ws-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8.5 10.5h7M8.5 13.5h4"/></svg>
+            Workspace Write
+            <svg class="chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+          </button>
+        </div>
+        <div class="trailing">
+          <button class="model-trigger">
+            DeepSeek-V41-Flash <span class="effort">High</span>
+            <svg class="chev" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5L6 7.5L9 4.5"/></svg>
+          </button>
+          <button class="mic" aria-label="Voice input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+          </button>
+          <button class="send-btn" aria-label="Send">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="hint">
+  <b>composer demo</b> &nbsp;/&nbsp; fake turn &nbsp;/&nbsp; question card
+</div>
+
+<script>
+(function () {
+  const card         = document.getElementById('card');
+  const input        = document.getElementById('input');
+  const placeholder  = document.getElementById('placeholder');
+  const statusRow    = document.getElementById('statusRow');
+  const statusText   = document.getElementById('statusText');
+  const questionFrame = document.getElementById('questionFrame');
+
+  const PROMPT = 'Audit my workspaces for at-risk services';
+  const STATUS = 'Staring intently…';
+
+  // TextShimmer sets the highlight width from the text length.
+  statusText.style.setProperty('--shimmer-spread', `${STATUS.length * 8}px`);
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function setComposerText(text) {
+    input.textContent = text;
+    const empty = text === '';
+    card.classList.toggle('empty', empty);
+    placeholder.style.display = empty ? '' : 'none';
+  }
+
+  async function typePrompt() {
+    setComposerText('');
+    placeholder.style.display = '';
+    card.classList.add('typing');
+    for (let i = 0; i < PROMPT.length; i++) {
+      input.textContent = PROMPT.slice(0, i + 1);
+      card.classList.remove('empty');
+      placeholder.style.display = 'none';
+      await sleep(26 + Math.random() * 28);
+    }
+    card.classList.remove('typing');
+    await sleep(500);
+  }
+
+  async function run() {
+    // reset to an idle composer
+    setComposerText('');
+    statusRow.classList.remove('visible');
+    questionFrame.classList.remove('visible');
+
+    await sleep(700);
+
+    // 1. type the prompt
+    await typePrompt();
+
+    // 2. send — composer clears back to its placeholder, send goes dim
+    setComposerText('');
+    await sleep(350);
+
+    // 3. the turn runs: status row appears above the composer
+    statusRow.classList.add('visible');
+    await sleep(1600);
+
+    // 4. the harness asks a question — card fades in above the composer
+    questionFrame.classList.add('visible');
+
+    // 5. hold, then loop
+    await sleep(7000);
+    run();
+  }
+
+  // Static states for screenshots: ?freeze=status | ?freeze=question | ?freeze=typed
+  const FREEZE = new URLSearchParams(location.search).get('freeze');
+  if (FREEZE === 'status') {
+    setComposerText('');
+    statusRow.classList.add('visible');
+  } else if (FREEZE === 'question') {
+    setComposerText('');
+    statusRow.classList.add('visible');
+    questionFrame.classList.add('visible');
+  } else if (FREEZE === 'typed') {
+    setComposerText(PROMPT);
+  } else {
+    run();
+  }
+})();
+</script>
+</body>
+</html>

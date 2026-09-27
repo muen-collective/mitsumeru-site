@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spatial Wireframe — background preview</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        color: #f2f0ea;
+        font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      /* the background itself */
+      #bg {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+      }
+
+      /* content sits above it */
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: 62ch;
+        margin: 0 auto;
+        padding: 22vh 24px 30vh;
+      }
+
+      h1 {
+        font-size: 40px;
+        line-height: 1.1;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        margin: 0 0 16px;
+      }
+
+      p {
+        margin: 0 0 16px;
+        color: #b9b6ae;
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+
+      /* the tuning panel */
+      aside {
+        position: fixed;
+        right: 16px;
+        top: 16px;
+        z-index: 2;
+        width: 236px;
+        max-height: calc(100vh - 32px);
+        overflow: auto;
+        padding: 14px;
+        border-radius: 12px;
+        background: rgba(18, 18, 18, 0.72);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      aside h2 {
+        margin: 0 0 10px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: #8a8781;
+      }
+
+      label {
+        display: block;
+        margin: 0 0 9px;
+        font-size: 11px;
+        color: #a5a29b;
+      }
+
+      label span {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3px;
+      }
+
+      label b {
+        font-weight: 500;
+        color: #f2f0ea;
+        font-variant-numeric: tabular-nums;
+      }
+
+      input[type='range'] {
+        width: 100%;
+        margin: 0;
+        accent-color: #87bbff;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 9px;
+        font-size: 11px;
+        color: #a5a29b;
+      }
+
+      .row input {
+        accent-color: #87bbff;
+      }
+
+      button {
+        width: 100%;
+        padding: 7px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        color: #f2f0ea;
+        font: inherit;
+        font-size: 11px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bg"></div>
+
+    <main>
+      <h1>Spatial Wireframe</h1>
+      <p>
+        A drifting cloud of points wired together as a minimum spanning tree. The tree rebuilds
+        every frame as the points swim, with a discount on edges that already exist so the shape
+        holds together instead of flickering.
+      </p>
+      <p>
+        Drag any node to move it. The offset you leave behind sticks while the rest of the cloud
+        keeps drifting. Move the pointer near a node to light it up.
+      </p>
+      <p>
+        Drop-in usage:
+        <code>createSpatialWireframe(el, { settings })</code>
+        — same handle as the arcs: <code>stop()</code> and a live
+        <code>settings</code> object.
+      </p>
+      <p>
+        Scroll back up to see the scene fade back in.
+      </p>
+
+    </main>
+
+    <aside>
+      <h2>Settings</h2>
+      <div id="controls"></div>
+      <button id="reset">Reset</button>
+    </aside>
+
+    <script type="module">
+      import { createSpatialWireframe, DEFAULTS } from './src/spatial-wireframe.js';
+
+      const settings = { ...DEFAULTS };
+
+      // These match the values used on the Framer preview page.
+      Object.assign(settings, {
+        vertexCount: 5,
+        nodeSpacing: 0.8,
+        driftAmplitude: 0.65,
+        nodeSize: 5,
+        lineWidth: 1.5,
+        lineOpacity: 0.7,
+        shapeWidth: 0.75,
+        shapeHeight: 0.7,
+        twist: 0.4,
+        rotation: 18,
+        tilt: -10,
+        speed: 1,
+        glow: 0.7,
+        connectionDensity: 1,
+        pointerRange: 0.25,
+        pointerHighlight: 1,
+        gradient: false,
+        intensity: 1,
+        draggable: true,
+        scrollDriven: true,
+        startProgress: 0.4,
+        endProgress: 0.65,
+        fadeRange: 0.37,
+      });
+
+      const scene = createSpatialWireframe(document.getElementById('bg'), { settings });
+
+      const sliders = [
+        ['vertexCount', 'Nodes', 1, 60, 1],
+        ['nodeSpacing', 'Spacing', 0, 2, 0.01],
+        ['driftAmplitude', 'Drift', 0, 2, 0.05],
+        ['connectionDensity', 'Density', 0, 1, 0.05],
+        ['twist', 'Twist', -3, 3, 0.05],
+        ['rotation', 'Pitch', -90, 90, 0.5],
+        ['tilt', 'Roll', -90, 90, 0.5],
+        ['shapeWidth', 'Width', 0.1, 1.5, 0.01],
+        ['shapeHeight', 'Height', 0.1, 1.5, 0.01],
+        ['speed', 'Speed', 0, 3, 0.05],
+        ['nodeSize', 'Node px', 0, 12, 0.1],
+        ['lineWidth', 'Line px', 0, 5, 0.1],
+        ['lineOpacity', 'Opacity', 0, 1, 0.01],
+        ['glow', 'Glow', 0, 2, 0.05],
+        ['pointerRange', 'Pointer range', 0, 1, 0.01],
+        ['pointerHighlight', 'Highlight', 0, 3, 0.05],
+        ['intensity', 'Intensity', 0, 2, 0.05],
+      ];
+
+      const toggles = [
+        ['draggable', 'Draggable nodes'],
+        ['gradient', 'Depth gradient'],
+        ['scrollDriven', 'Fade with scroll'],
+      ];
+
+      const controls = document.getElementById('controls');
+
+      for (const [key, label, min, max, step] of sliders) {
+        const wrap = document.createElement('label');
+        wrap.innerHTML = `<span>${label}<b></b></span>`;
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = min;
+        input.max = max;
+        input.step = step;
+        input.value = settings[key];
+        const readout = wrap.querySelector('b');
+        readout.textContent = settings[key];
+        input.addEventListener('input', () => {
+          const v = parseFloat(input.value);
+          settings[key] = key === 'vertexCount' ? Math.round(v) : v;
+          readout.textContent = settings[key];
+        });
+        wrap.appendChild(input);
+        controls.appendChild(wrap);
+      }
+
+      for (const [key, label] of toggles) {
+        const wrap = document.createElement('div');
+        wrap.className = 'row';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = settings[key];
+        input.addEventListener('change', () => {
+          settings[key] = input.checked;
+        });
+        wrap.appendChild(input);
+        wrap.appendChild(document.createTextNode(label));
+        controls.appendChild(wrap);
+      }
+
+      document.getElementById('reset').addEventListener('click', () => location.reload());
+    </script>
+  </body>
+</html>

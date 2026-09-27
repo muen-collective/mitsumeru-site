@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Canvas backgrounds</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        color: #f2f0ea;
+        font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      /* the polygon, pinned to the right of the blocks */
+      #stage {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 52vw;
+        height: 100vh;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      /* content sits above it */
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: min(44vw, 62ch);
+        margin: 0;
+        padding: 18vh 0 30vh clamp(24px, 5vw, 96px);
+      }
+
+      h1 {
+        font-size: 40px;
+        line-height: 1.1;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        margin: 0 0 16px;
+      }
+
+      p {
+        margin: 0 0 16px;
+        color: #b9b6ae;
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+
+      /* the tuning panel */
+      aside {
+        position: fixed;
+        right: 16px;
+        top: 16px;
+        z-index: 2;
+        width: 236px;
+        max-height: calc(100vh - 32px);
+        overflow: auto;
+        padding: 14px;
+        border-radius: 12px;
+        background: rgba(18, 18, 18, 0.72);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      aside h2 {
+        margin: 0 0 10px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: #8a8781;
+      }
+
+      label {
+        display: block;
+        margin: 0 0 9px;
+        font-size: 11px;
+        color: #a5a29b;
+      }
+
+      label span {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3px;
+      }
+
+      label b {
+        font-weight: 500;
+        color: #f2f0ea;
+        font-variant-numeric: tabular-nums;
+      }
+
+      input[type='range'] {
+        width: 100%;
+        margin: 0;
+        accent-color: #87bbff;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 9px;
+        font-size: 11px;
+        color: #a5a29b;
+      }
+
+      .row input {
+        accent-color: #87bbff;
+      }
+
+      button {
+        width: 100%;
+        padding: 7px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        color: #f2f0ea;
+        font: inherit;
+        font-size: 11px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+    </style>
+    <style>
+      .cards {
+        display: grid;
+        gap: 16px;
+        margin-top: 28px;
+      }
+
+      a.card {
+        display: block;
+        padding: 18px 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        text-decoration: none;
+        color: inherit;
+      }
+
+      a.card:hover {
+        background: rgba(255, 255, 255, 0.09);
+      }
+
+      a.card strong {
+        display: block;
+        font-size: 17px;
+        font-weight: 500;
+        margin-bottom: 4px;
+      }
+
+      a.card span {
+        color: #8a8781;
+        font-size: 13px;
+      }
+
+      /* 01 / 02 / 03 — the scroll narrative the morph follows */
+      .story {
+        margin-top: 48px;
+      }
+
+      .story section {
+        height: 132vh;
+        position: relative;
+      }
+
+      .story .panel {
+        position: sticky;
+        top: 38vh;
+        opacity: 0.32;
+        transition: opacity 0.5s ease;
+      }
+
+      .story section.is-active .panel {
+        opacity: 1;
+      }
+
+      .story .num {
+        display: block;
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        color: #05e8e0;
+        margin-bottom: 14px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .story h3 {
+        margin: 0 0 12px;
+        font-size: 30px;
+        line-height: 1.1;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+
+      .story .panel p {
+        margin: 0;
+        max-width: 34ch;
+        color: #9d9a93;
+      }
+
+      /* section rail */
+      #rail {
+        position: fixed;
+        right: 26px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      #rail span {
+        color: #4a4844;
+        transition: color 0.4s ease;
+      }
+
+      #rail span.is-active {
+        color: #05e8e0;
+      }
+
+      @media (max-width: 900px) {
+        #rail {
+          display: none;
+        }
+
+        .story section {
+          height: 122vh;
+        }
+
+        .story .panel {
+          top: 66vh;
+        }
+
+        #stage {
+          width: 100vw;
+          height: 54vh;
+        }
+
+        main {
+          max-width: none;
+          padding: 56vh 22px 30vh;
+        }
+
+        /* the panel would sit on the card list at this width */
+        aside {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+
+    <main>
+      <h1>Canvas backgrounds</h1>
+      <p>
+        Four dependency-free background effects, ported from the Kinetic Particle Scenes Framer
+        previews. Each one is a single module you drop behind your content.
+      </p>
+      <div class="cards">
+        <a class="card" href="./spherical-arcs.html">
+          <strong>Spherical Arcs</strong>
+          <span>
+            A sphere of twisted latitude arcs with travelling light and a pointer-lit cap.
+          </span>
+        </a>
+        <a class="card" href="./spatial-wireframe.html">
+          <strong>Spatial Wireframe</strong>
+          <span>
+            A drifting point cloud rebuilt as a spanning tree each frame. Nodes are draggable.
+          </span>
+        </a>
+        <a class="card" href="./ascii-water-reveal.html">
+          <strong>ASCII Water Reveal</strong>
+          <span>
+            A wave simulation that draws its surface as ASCII glyphs. Move the pointer to stir it.
+          </span>
+        </a>
+        <a class="card" href="./scan-button.html">
+          <strong>Quick Scan Button</strong>
+          <span>
+            A bordered button with a scanning rule and a per-character text reveal on hover.
+          </span>
+        </a>
+      </div>
+
+      <div class="story">
+        <section data-stage="0">
+          <div class="panel">
+            <span class="num">01</span>
+            <h3>Wireframe</h3>
+            <p>
+              Sixteen points, held together by the shortest lines between them. The edge set is
+              rebuilt every frame, so the shape is only ever whatever the space currently allows.
+            </p>
+          </div>
+        </section>
+
+        <section data-stage="1">
+          <div class="panel">
+            <span class="num">02</span>
+            <h3>Polygon</h3>
+            <p>
+              Twelve corners, thirty edges, twenty faces. A regular icosahedron has nothing left to
+              remove and nothing left to add — back faces fall away into the dark.
+            </p>
+          </div>
+        </section>
+
+        <section data-stage="2">
+          <div class="panel">
+            <span class="num">03</span>
+            <h3>Sphere</h3>
+            <p>
+              The same volume, smoothed past the point where any corner survives. Twenty arcs run
+              pole to pole, each one twisted by its own latitude.
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <nav id="rail" aria-hidden="true">
+      <span data-rail="0">01</span>
+      <span data-rail="1">02</span>
+      <span data-rail="2">03</span>
+    </nav>
+
+    <aside>
+      <h2>Backgrounds</h2>
+      <button id="reset">Reset</button>
+    </aside>
+
+    <script type="module">
+      import { createShapeMorph } from './src/shape-morph.js';
+
+      // The full three-shape morph: wireframe → polygon → sphere on scroll,
+      // collapsing to a dot and expanding back with the bounce at each handoff.
+      const sections = [...document.querySelectorAll('section[data-stage]')];
+      const rail = [...document.querySelectorAll('#rail span')];
+
+      createShapeMorph(document.getElementById('stage'), {
+        sections,
+        onStage: (stage, index) => {
+          sections.forEach((el, i) => el.classList.toggle('is-active', i === index));
+          rail.forEach((el, i) => el.classList.toggle('is-active', i === index));
+        },
+      });
+    </script>
+  </body>
+</html>

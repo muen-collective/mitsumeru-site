@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quick Scan Button — preview</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #080808;
+        color: #f2f0ea;
+        font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 8vh 24px 20vh;
+      }
+
+      h1 {
+        font-size: 40px;
+        line-height: 1.1;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        margin: 0 0 16px;
+      }
+
+      p {
+        margin: 0 0 16px;
+        color: #b9b6ae;
+        max-width: 62ch;
+      }
+
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+
+      .stage {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 48px;
+        align-items: center;
+        padding: 56px 40px;
+        margin: 32px 0;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .stage h2 {
+        width: 100%;
+        margin: 0 0 4px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: #8a8781;
+      }
+
+      aside {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 12px 20px;
+        padding: 18px 20px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        background: rgba(18, 18, 18, 0.72);
+      }
+
+      aside h2 {
+        grid-column: 1 / -1;
+        margin: 0;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: #8a8781;
+      }
+
+      label {
+        display: block;
+        font-size: 11px;
+        color: #a5a29b;
+      }
+
+      label span {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 3px;
+      }
+
+      label b {
+        font-weight: 500;
+        color: #f2f0ea;
+        font-variant-numeric: tabular-nums;
+      }
+
+      input[type='range'],
+      input[type='text'] {
+        width: 100%;
+        margin: 0;
+        accent-color: #87bbff;
+      }
+
+      input[type='text'] {
+        padding: 6px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.05);
+        color: inherit;
+        font: inherit;
+        font-size: 12px;
+      }
+
+      input[type='color'] {
+        width: 100%;
+        height: 28px;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 7px;
+        background: transparent;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Quick Scan Button</h1>
+      <p>
+        A bordered button rebuilt from
+        <a href="https://scanbutton.framer.website/">scanbutton.framer.website</a>, measured off that
+        page at 1728px. The label sits in a 19px well that clips, with a second copy stacked under it;
+        hovering slides the pair up one line.
+      </p>
+      <p>
+        Four 11px marks sit centred on the corners, so 5px of each hangs outside. Their two strokes
+        cross at the mark's own centre, which puts the crossing point on the box corner &mdash; a
+        `+`, not a bracket. The corner strokes and the scan rule carry the accent; the box rules are
+        white at opacity .1, which is what reads as red crosses joined by a grey line. All CSS and
+        one element tree, no canvas.
+      </p>
+
+      <div class="stage" id="stage-one">
+        <h2>Variant one — rule fills the box</h2>
+      </div>
+
+      <div class="stage" id="stage-two">
+        <h2>Variant two — rule rises as a bar</h2>
+      </div>
+
+      <p>
+        Drop-in usage:
+        <code>createScanButton({ label, variant, icon, textColor, accentColor, lineColor, href })</code>
+        — returns <code>{ element, settings, setLabel, setIcon, destroy }</code>.
+      </p>
+
+      <aside id="controls">
+        <h2>Settings</h2>
+      </aside>
+    </main>
+
+    <script type="module">
+      import { createScanButton, DEFAULTS } from './src/scan-button.js';
+
+      const state = {
+        ...DEFAULTS,
+        label: 'Get In Touch',
+        textColor: '#ffffff',
+        accentColor: '#ff0000',
+      };
+
+      const one = createScanButton({ ...state, variant: 'one' });
+      const two = createScanButton({ ...state, variant: 'two' });
+      document.getElementById('stage-one').appendChild(one.element);
+      document.getElementById('stage-two').appendChild(two.element);
+
+      const controls = document.getElementById('controls');
+
+      const text = (key, label) => {
+        const wrap = document.createElement('label');
+        wrap.innerHTML = `<span>${label}</span>`;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = state[key];
+        input.addEventListener('input', () => {
+          state[key] = input.value;
+          one.setLabel(input.value);
+          two.setLabel(input.value);
+        });
+        wrap.appendChild(input);
+        controls.appendChild(wrap);
+      };
+
+      const colour = (key, label) => {
+        const wrap = document.createElement('label');
+        wrap.innerHTML = `<span>${label}</span>`;
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = state[key];
+        input.addEventListener('input', () => {
+          state[key] = input.value;
+          for (const btn of [one, two]) {
+            btn.settings[key] = input.value;
+            btn.element.style.setProperty(key === 'accentColor' ? '--qsb-accent' : '--qsb-text', input.value);
+          }
+        });
+        wrap.appendChild(input);
+        controls.appendChild(wrap);
+      };
+
+      const range = (key, label, min, max, step) => {
+        const wrap = document.createElement('label');
+        wrap.innerHTML = `<span>${label}<b></b></span>`;
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = min;
+        input.max = max;
+        input.step = step;
+        input.value = state[key];
+        const readout = wrap.querySelector('b');
+        readout.textContent = state[key];
+        input.addEventListener('input', () => {
+          state[key] = parseFloat(input.value);
+          readout.textContent = input.value;
+          for (const btn of [one, two]) {
+            btn.settings[key] = state[key];
+            btn.element.style.setProperty('--qsb-size', `${state.fontSize}px`);
+          }
+        });
+        wrap.appendChild(input);
+        controls.appendChild(wrap);
+      };
+
+      text('label', 'Label');
+      colour('accentColor', 'Accent');
+      colour('textColor', 'Text');
+      range('fontSize', 'Font size', 10, 32, 1);
+      range('cornerSize', 'Corner mark', 5, 24, 1);
+      colour('lineColor', 'Box line');
+      range('duration', 'Duration s', 0.05, 1, 0.01);
+      range('markOffset', 'Mark offset px', 0, 12, 1);
+    </script>
+  </body>
+</html>
