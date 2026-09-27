@@ -95,6 +95,16 @@ export const DEFAULTS = {
   glow: 1, // 0..2, halo width
   intensity: 1,
 
+  // --- chromatic split ----------------------------------------------------
+  // While the pointer is on the shape the geometry is stroked once per primary
+  // and the three passes are added together. `split` is the channel offset in px
+  // at full proximity, `splitReach` is how far past the distortion radius the
+  // cursor still counts as being on the object, and `splitAlpha` is the per-pass
+  // opacity. Set split to 0 to turn the whole thing off.
+  split: 9,
+  splitReach: 1.1,
+  splitAlpha: 0.62,
+
   // --- wireframe ----------------------------------------------------------
   points: 16, // 4..120
   pointSpread: 0.92,
@@ -127,6 +137,9 @@ function resolveSettings(input) {
   s.segments = Math.round(clamp(s.segments, 0, 200));
   s.holdZone = clamp(s.holdZone, 0, 0.49);
   s.collapseShare = clamp(s.collapseShare, 0.1, 0.9);
+  s.split = clamp(s.split, 0, 40);
+  s.splitReach = clamp(s.splitReach, 0, 3);
+  s.splitAlpha = clamp(s.splitAlpha, 0, 1);
   if (!EASES[s.expandEase]) s.expandEase = 'back';
   return s;
 }
@@ -456,6 +469,9 @@ function buildPalette(s) {
   return out;
 }
 
+/** Pure primaries. Added over each other they come back to white. */
+const SPLIT_RGB = ['255,0,0', '0,255,0', '0,0,255'];
+
 /**
  * Stroke a display list.
  *
@@ -471,20 +487,29 @@ function paint(ctx, list, view, palette) {
 
   lines.sort((a, b) => a.depth - b.depth);
 
-  const at = (depth) => palette[clamp((depth * 31) | 0, 0, 31)];
+  // `channel` swaps the shape's own palette for one flat primary. The split needs
+  // that: the object is teal, so its own red is about 5/255 and a split of the
+  // real colour would show no red at all. `skipHalo` lets the extra channel
+  // passes drop the halo, which is what keeps the glow from tripling.
+  const chan = view.channel;
+  const at = chan === undefined
+    ? (depth) => palette[clamp((depth * 31) | 0, 0, 31)]
+    : () => SPLIT_RGB[chan];
 
   ctx.lineCap = 'round';
 
   // halo, under everything
-  for (const l of lines) {
-    const w = l.width + l.glow;
-    if (l.glow <= 0.2) continue;
-    ctx.strokeStyle = `rgba(${at(l.depth)},${l.alpha * alpha * 0.11})`;
-    ctx.lineWidth = w;
-    ctx.beginPath();
-    ctx.moveTo(ox + l.x1 * k, oy + l.y1 * k);
-    ctx.lineTo(ox + l.x2 * k, oy + l.y2 * k);
-    ctx.stroke();
+  if (!view.skipHalo) {
+    for (const l of lines) {
+      const w = l.width + l.glow;
+      if (l.glow <= 0.2) continue;
+      ctx.strokeStyle = `rgba(${at(l.depth)},${l.alpha * alpha * 0.11})`;
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(ox + l.x1 * k, oy + l.y1 * k);
+      ctx.lineTo(ox + l.x2 * k, oy + l.y2 * k);
+      ctx.stroke();
+    }
   }
 
   for (const l of lines) {
@@ -869,6 +894,38 @@ export function createShapeMorph(container, options = {}) {
       return list;
     }
 
+    // --- chromatic split ---------------------------------------------------
+    // While the cursor is on the object the same display list is stroked once per
+    // primary, each pass shifted along y and added to the others, so overlapping
+    // runs recombine and only the edges fringe. The offset rides the same
+    // proximity curve as the distortion, squared, so the split opens as the cursor
+    // closes in and shuts again when it leaves. Under reduced motion the pointer is
+    // already ignored, so this cannot run there.
+    let splitPx = 0;
+    if (s.split > 0 && ptrActive) {
+      const reach = ptrRadius * s.splitReach;
+      const near = clamp(1 - Math.hypot(pointer.x - ox, pointer.y - oy) / reach, 0, 1);
+      splitPx = near * near * s.split;
+    }
+
+    /** Stroke one list, split into channels when the pointer is close enough. */
+    const render = (list, view) => {
+      if (splitPx <= 0.35) { paint(ctx, list, view, palette); return; }
+      const prevOp = ctx.globalCompositeOperation;
+      ctx.globalCompositeOperation = 'lighter';
+      for (let c = 0; c < 3; c++) {
+        paint(ctx, list, {
+          ox: view.ox,
+          oy: view.oy + (c === 0 ? -splitPx : c === 2 ? splitPx : 0),
+          k: view.k,
+          alpha: view.alpha * s.splitAlpha,
+          channel: c,
+          skipHalo: c !== 1,   // one halo only, or the glow doubles up
+        }, palette);
+      }
+      ctx.globalCompositeOperation = prevOp;
+    };
+
     // --- draw -------------------------------------------------------------
     if (reduced) {
       // no theatre: show the shape the scroll points at, fully formed
@@ -879,21 +936,21 @@ export function createShapeMorph(container, options = {}) {
         handle.onStage?.(stage, shape);
       }
       const list = displace(builderAt(shape)(time, s, R));
-      paint(ctx, list, { ox, oy, k: 1, alpha: 1 }, palette);
+      render(list, { ox, oy, k: 1, alpha: 1 });
       return;
     }
 
     if (state.settled) {
       const list = displace(builderAt(state.from)(time, s, R));
-      paint(ctx, list, { ox, oy, k: 1, alpha: 1 }, palette);
+      render(list, { ox, oy, k: 1, alpha: 1 });
     } else {
       if (state.fromAlpha > 0.004) {
         const out = displace(builderAt(state.from)(time, s, R));
-        paint(ctx, out, { ox, oy, k: state.fromK, alpha: state.fromAlpha }, palette);
+        render(out, { ox, oy, k: state.fromK, alpha: state.fromAlpha });
       }
       if (state.toAlpha > 0.004) {
         const into = displace(builderAt(state.to)(time, s, R));
-        paint(ctx, into, { ox, oy, k: state.toK, alpha: state.toAlpha }, palette);
+        render(into, { ox, oy, k: state.toK, alpha: state.toAlpha });
       }
       paintCore(ctx, ox, oy, Math.max(2.2, R * 0.028), state.core, s);
     }

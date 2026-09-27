@@ -387,15 +387,16 @@ header a.gh:hover { color: var(--fg); }
   font-family: var(--sans); font-size: 13.5px; line-height: 1.5; color: var(--muted-fg); display: block;
 }
 
-/* panel-copy entrance: each child fold staggers via --stagger */
 .panel-copy .fold { margin-bottom: 0; }
-.panel-copy .fold-inner {
-  transition-delay: calc(var(--stagger, 0) * 0.12s);
-}
 
 /* The cards are gone. The visual half is the object: one polygon, pinned in
    the column, that collapses to a dot and expands again as the panels change
-   over. It is hidden below the grid breakpoint, the same point the rail goes. */
+   over. It is hidden below the grid breakpoint, the same point the rail goes.
+
+   No z-index here, deliberately. The object is left inside the RGB split band's
+   backdrop so the band refracts it — the split reads well across the wireframe,
+   and lifting this column would take the object out of the band. See the band's
+   own note for how the rail is kept crisp instead. */
 .cards-sticky { display: none; }
 @media (min-width: 1000px) {
   .cards-sticky { display: block; position: sticky; top: 0; height: 100svh; }
@@ -409,14 +410,7 @@ header a.gh:hover { color: var(--fg); }
     mask-image: radial-gradient(ellipse at center, #000 55%, transparent 92%);
   }
 }
-/* Entrance. From animate-entrance: travel 26px, scale .96, ease-out, no bounce. */
-.reveal { opacity: 0; transform: translateY(26px) scale(0.96); }
-.reveal.in {
-  opacity: 1; transform: none;
-  transition: opacity .7s var(--ease), transform .7s var(--ease);
-}
 @media (prefers-reduced-motion: reduce) {
-  .reveal, .reveal.in { opacity: 1; transform: none; transition: none; }
   .rail-tick, .rail-num, .rail-needle { transition: none; }
 }
 /* Hide the rail at the SAME breakpoint the grid collapses to one column (1000px),
@@ -427,31 +421,76 @@ header a.gh:hover { color: var(--fg); }
   .rail { display: none; }
 }
 
-/* ── fold entrance ────────────────────────────────────────────────────────
-   Content starts a full height below an INVISIBLE FOLD (overflow: hidden
-   wrapper) and slides up into place. The wrapper's height IS the content's
-   height because transforms do not affect layout, so translateY(100%) parks
-   the content precisely out of sight. Bidirectional — re-runs on scroll back.
+/* ── the fold entrance is gone ────────────────────────────────────────────
+   `.fold` and `.fold-inner` survive in the markup but no longer animate:
+   content now paints in place instead of sliding up from behind a clip.
+   Both classes are no-ops, and `--stagger` is still on the elements but now
+   unused.
+
+   The wrapper divs are deliberately left in place rather than unwrapped.
+   `.facts` is a grid and its `.fold-inner` is the single grid child, so
+   deleting that wrapper would promote its rows into the grid and re-track
+   them. The others would survive unwrapping, but that is a pure markup change
+   with no effect on the result, so it is not worth the risk here.
+
+   Three `.rows` wrappers were already unwrapped in the working tree before
+   this pass, so `.panel-copy .rows` children are now direct grid items.
    ──────────────────────────────────────────────────────────────────────── */
-.fold {
-  overflow: hidden;
-}
-.fold.fold-visible {
-  overflow: visible;
-}
-.fold-inner {
-  transform: translateY(100%);
-  transition: transform 0.65s cubic-bezier(0.65, 0, 0.35, 1);
-}
-.fold-visible > .fold-inner {
-  transform: none;
+
+/* ── RGB split strip ──────────────────────────────────────────────────────
+   A fixed band sitting in the BOTTOM THIRD of the viewport. Nothing here is
+   visible on its own: `backdrop-filter` samples whatever is painted behind the
+   band, `#rgbSplit` splits it into three channels and offsets two of them along
+   dy, and the mask below decides which rows survive.
+
+   83.3333% is the centre of the bottom third (the third runs 66.67% to 100%),
+   not the vertical centre. The rail is pinned at 50% and the hero copy is
+   centred in its 100svh, so a band at 50% ran straight through both. Down here
+   the band meets text on its way out of the viewport instead, which is also
+   where a scroll-reactive effect reads best.
+
+   A thicker band is a longer effect: the channels have to separate along dy, so
+   the band is the distance over which that separation can happen. --split-zone
+   is the fully-opaque height; raise it to make the split last longer.
+
+   The element is TALLER than the band on purpose. backdrop-filter output is
+   clipped to the element's own box, so with no padding the offset copies would
+   shear off along a hard horizontal line at the band's edges. The bleed gives
+   them that room, and the mask hides the bleed, so the visible band stays
+   exactly --split-zone tall. --split-bleed must stay equal to MAX in the driver.
+
+   z-index 4 only does anything because the band lives INSIDE `.site`, which is
+   its own stacking context (position:relative + z-index:3). Within that context
+   the band sits above the ordinary content and above the morph object — both
+   have no z-index — and below the rail (5) and the separator (6). So the band
+   refracts the copy and the wireframe and leaves the section nav crisp.
+   Out at the root the band would instead paint over the whole of `.site` and
+   fuzz the rail with it, which is why the element sits inside the wrapper
+   rather than up beside `.hero`. The hero and the composer section are outside
+   `.site` and earlier in paint order, so the band still refracts those.
+   ──────────────────────────────────────────────────────────────────────── */
+.split-strip {
+  --split-zone: 140px;
+  --split-bleed: 14px;
+  position: fixed; left: 0; right: 0;
+  top: 83.3333%;
+  transform: translateY(-50%);
+  height: calc(var(--split-zone) + 2 * var(--split-bleed));
+  pointer-events: none;
+  z-index: 4;
+  backdrop-filter: url(#rgbSplit);
+  -webkit-backdrop-filter: url(#rgbSplit);
+  -webkit-mask-image: linear-gradient(to bottom,
+    transparent 0px, #000 var(--split-bleed),
+    #000 calc(100% - var(--split-bleed)), transparent 100%);
+  mask-image: linear-gradient(to bottom,
+    transparent 0px, #000 var(--split-bleed),
+    #000 calc(100% - var(--split-bleed)), transparent 100%);
 }
 @media (prefers-reduced-motion: reduce) {
-  .fold-inner,
-  .fold-visible > .fold-inner {
-    transform: none;
-    transition: none;
-  }
+  /* The band is pure decoration and only does anything while the page moves,
+     so there is nothing to show when motion is not wanted. */
+  .split-strip { display: none; }
 }
 
 /* COMPOSER — the harness's own composer running a scripted turn. It types a
@@ -875,6 +914,28 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
 </head>
 <body>
 
+<!-- The RGB split strip: one filter, one band. See `.split-strip` in the CSS
+     and the RGB SPLIT STRIP block in the script below. The filter is defined
+     once and referenced by url(), it paints nothing on its own. Red and blue
+     carry ids because their dy is written every frame, green never moves.
+     color-interpolation-filters is sRGB because the SVG default (linearRGB)
+     washes the fringes out. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <filter id="rgbSplit" x="-2%" y="-60%" width="104%" height="220%"
+          color-interpolation-filters="sRGB">
+    <feOffset id="rgbSplitRed" in="SourceGraphic" dx="0" dy="0" result="rShift"/>
+    <feColorMatrix in="rShift" type="matrix"
+      values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="rCh"/>
+    <feColorMatrix in="SourceGraphic" type="matrix"
+      values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="gCh"/>
+    <feOffset id="rgbSplitBlue" in="SourceGraphic" dx="0" dy="0" result="bShift"/>
+    <feColorMatrix in="bShift" type="matrix"
+      values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="bCh"/>
+    <feBlend in="rCh" in2="gCh" mode="screen" result="rg"/>
+    <feBlend in="rg" in2="bCh" mode="screen"/>
+  </filter>
+</defs></svg>
+
 <div class="hero">
 <video class="hero-video" id="heroVideo" src="hero-video.mp4" autoplay loop muted playsinline aria-hidden="true"></video>
 <canvas id="particleCanvas" aria-hidden="true"></canvas>
@@ -974,6 +1035,16 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
 
 <div class="site">
 
+<!-- The RGB split band lives INSIDE .site on purpose. `.site` is a stacking
+     context (position:relative + z-index:3), so an element out at the root
+     cannot be interleaved with what is in here — the band at the root painted
+     straight over the rail as well as the content. In here it competes with the
+     rail directly: the band keeps z-index 4, the rail keeps 5, so the nav stays
+     crisp while the copy and the morph object, neither of which has a z-index,
+     are still refracted. The hero and the composer section sit OUTSIDE `.site`
+     and earlier in paint order, so the band refracts those too. -->
+<div class="split-strip" id="rgbSplitStrip" aria-hidden="true"></div>
+
   <section class="scrolly" id="panels">
     <!-- The rail is a RULER: the scale (01/02/03) is static, one needle travels down
          it as the left text scrolls, and a small static marker sits at the midpoint
@@ -1001,7 +1072,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
             <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">01 &mdash; Visualize</span></div></div>
             <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>The designer sees the final product in their head.</h3></div></div>
             <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">Scattered points, the shape emerging. Mitsumeru gives you the canvas to sketch that vision &mdash; bring your own keys, connect any provider, adapt to your image source and model.</p></div></div>
-            <div class="rows fold" style="--stagger:3"><div class="fold-inner">
+            <div class="rows">
               <div class="row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 8.5v4M5 15.5v-3h14v3"/></svg>
                 <span>BYOK &mdash; bring your own API keys</span>
@@ -1014,7 +1085,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8"/></svg>
                 <span>Adapts to your image source</span>
               </div>
-            </div></div>
+            </div>
           </div>
         </div>
 
@@ -1023,7 +1094,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
             <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">02 &mdash; Build</span></div></div>
             <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>Prompt the agent to build it.</h3></div></div>
             <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">The agent carries the technical part. Muen builds the skills, plugins, and system prompts &mdash; first plugin ships: AI image and video generation. Next: design systems, project starter. You stay focused on design, not engineering.</p></div></div>
-            <div class="rows fold" style="--stagger:3"><div class="fold-inner">
+            <div class="rows">
               <div class="row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
                 <span>Skills and plugins built by Muen</span>
@@ -1036,7 +1107,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
                 <span>Design systems and project starter next</span>
               </div>
-            </div></div>
+            </div>
           </div>
         </div>
 
@@ -1045,7 +1116,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
             <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">03 &mdash; Polish</span></div></div>
             <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>Refine before publishing.</h3></div></div>
             <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">The Mitsumeru plugin expands forever &mdash; add a RunningHub workflow by pasting a URL, build a custom UI panel in minutes. Your workflow, not ours. What the user actually touches.</p></div></div>
-            <div class="rows fold" style="--stagger:3"><div class="fold-inner">
+            <div class="rows">
               <div class="row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="14" r="4"/><path d="M12 12l8-8M18 4h3v3"/></svg>
                 <span>RunningHub &mdash; paste a URL, get a panel</span>
@@ -1058,7 +1129,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 16l5-5 4 3 7-7"/><path d="M15 7h5v5"/></svg>
                 <span>Your workflow, not ours</span>
               </div>
-            </div></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1624,61 +1695,111 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
     }
   })();
 
-  // Entrance, from the animate-entrance recipe: fade + rise on first scroll-in,
-  // staggered, and skipped entirely when the user has asked for less motion.
+  // ─── RGB SPLIT STRIP ───
+  // One fixed 84px band across the vertical centre of the viewport. Whatever is
+  // painted behind it is re-split into three channels, which then separate along
+  // the scroll axis and rejoin.
+  //
+  // Vertical, not Strand's horizontal. The strip is a WIDE band, so the only
+  // motion through it is up and down; offsets running along that same axis read
+  // as lag. Horizontal offsets would read as a prism sitting sideways to the
+  // direction the text is actually travelling.
+  //
+  // Velocity-driven, not position-driven, which is what makes the lag legible.
+  // Each channel has its own follower constant, so on a flick blue snaps out
+  // first and red trails it; on the stop blue settles first and red is the last
+  // thing back to white. At rest every offset is zero, which is the filter's
+  // identity, so the band stops doing anything at all and the loop parks.
+  //
+  // dy is not a CSS property and SMIL cannot be driven from a scroll position,
+  // so the three attributes are written directly. That is the only reason this
+  // needs a rAF loop.
   (function () {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      var els = document.querySelectorAll('.reveal');
-      for (var r = 0; r < els.length; r++) els[r].classList.add('in');
-      return;
-    }
-    if (!('IntersectionObserver' in window)) return;
-    var seen = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (!e.isIntersecting) return;
-        var el = e.target;
-        var sibs = el.parentNode.querySelectorAll('.reveal');
-        var idx = Array.prototype.indexOf.call(sibs, el);
-        el.style.transitionDelay = Math.min(idx * 0.12, 0.36) + 's';
-        el.classList.add('in');
-        seen.unobserve(el);
-      });
-    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
-    var revealed = document.querySelectorAll('.reveal');
-    for (var k = 0; k < revealed.length; k++) seen.observe(revealed[k]);
-  })();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  // FOLD ENTRANCE — bidirectional. Each .fold element slides up from behind
-  // an invisible overflow clip when it enters the viewport, and slides back
-  // down when it leaves. Stagger is set via --stagger custom property in HTML.
-  (function () {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      var els = document.querySelectorAll('.fold');
-      for (var r = 0; r < els.length; r++) els[r].classList.add('fold-visible');
-      return;
+    var strip = document.getElementById('rgbSplitStrip');
+    var red   = document.getElementById('rgbSplitRed');
+    var blue  = document.getElementById('rgbSplitBlue');
+    if (!strip || !red || !blue) return;
+
+    var GAIN     = 0.70;   // px of offset per px/frame of lagged scroll velocity
+    var MAX      = 14;     // px cap; MUST match --split-bleed in the CSS
+    var LAG_RED  = 0.10;   // slowest follower, so red trails the furthest
+    var LAG_BLUE = 0.26;   // fastest follower, so blue snaps back first
+    var EPS      = 0.05;   // px/frame under which a follower counts as settled
+
+    var last = window.scrollY || window.pageYOffset || 0;
+    var vRed = 0, vBlue = 0;
+    var running = false;
+
+    function put(node, dy) {
+      var v = Math.max(-MAX, Math.min(MAX, dy)).toFixed(2);
+      if (node.getAttribute('dy') !== v) node.setAttribute('dy', v);
     }
-    if (!('IntersectionObserver' in window)) return;
-    var foldObs = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        var el = e.target;
-        if (e.isIntersecting) {
-          el.classList.add('fold-visible');
-        } else {
-          el.classList.remove('fold-visible');
-        }
-      });
-    }, { threshold: 0.15, rootMargin: '0px 0px -10% 0px' });
-    var folds = document.querySelectorAll('.fold');
-    for (var f = 0; f < folds.length; f++) foldObs.observe(folds[f]);
+
+    function frame() {
+      var y = window.scrollY || window.pageYOffset || 0;
+      var delta = y - last;
+      last = y;
+
+      vRed  += (delta - vRed)  * LAG_RED;
+      vBlue += (delta - vBlue) * LAG_BLUE;
+
+      // The sign follows the direction of travel, so red always sits behind the
+      // motion and blue always ahead of it. Scrolling down puts red below the
+      // text and blue above it; scrolling up mirrors that. Green is the source
+      // graphic and never moves, so there is always a crisp core to read against.
+      put(red,   vRed  * GAIN);
+      put(blue, -vBlue * GAIN);
+
+      if (delta === 0 && Math.abs(vRed) < EPS && Math.abs(vBlue) < EPS) {
+        park();
+        return;
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // At rest both offsets are zero, which is the filter's identity: the band paints
+    // nothing. Hidden it stops costing anything too, which matters because it is a
+    // full-width backdrop filter and the hero's video and dots keep changing behind
+    // it. Revealed on the first scroll event, before the offsets have grown, so
+    // there is no visible pop.
+    function park() {
+      vRed = 0; vBlue = 0;
+      put(red, 0); put(blue, 0);
+      running = false;
+      strip.style.visibility = 'hidden';
+    }
+
+    function kick() {
+      if (running) return;
+      running = true;
+      strip.style.visibility = '';
+      requestAnimationFrame(frame);
+    }
+
+    park();
+    window.addEventListener('scroll', kick, { passive: true });
   })();
 
   // PARTICLE GRID
+  //
+  // Every dot's resting position is fixed, so the untouched field is rasterised
+  // once per resize into an offscreen canvas. A live frame is then one blit plus
+  // arcs for only the dots the cursor has actually pushed. Stroking all ~42k dots
+  // every frame, which is what this used to do, was the heaviest thing on the page
+  // and the first thing to fall over on an older GPU.
   var canvas = document.getElementById('particleCanvas');
   var ctx = canvas.getContext('2d');
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
   var SPACING = 5, DOT_R = 0.6, REPEL_R = 80, REPEL_FORCE = 2.5, RETURN_SPEED = 0.08;
-  var w, h, cols, rows2, total, ox, oy, tx, ty2;
+  var w, h, cols, rows2, total;
+  var ox, oy, rx, ry;              // live and resting positions
   var mouseX = -9999, mouseY = -9999;
+  var SETTLED = 0.0004;            // px squared, under which a dot counts as home
+
+  var rest = document.createElement('canvas');
+  var rctx = rest.getContext('2d');
 
   function resize() {
     w = window.innerWidth;
@@ -1692,32 +1813,73 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
     rows2 = Math.ceil(h / SPACING) + 1;
     total = cols * rows2;
     ox = new Float32Array(total); oy = new Float32Array(total);
-    tx = new Float32Array(total); ty2 = new Float32Array(total);
+    rx = new Float32Array(total); ry = new Float32Array(total);
     var idx = 0;
     for (var r = 0; r < rows2; r++) {
       for (var c = 0; c < cols; c++) {
         var x = c * SPACING, y = r * SPACING;
-        ox[idx] = x; oy[idx] = y; tx[idx] = x; ty2[idx] = y;
+        ox[idx] = x; oy[idx] = y; rx[idx] = x; ry[idx] = y;
         idx++;
       }
     }
+    buildRest();
   }
-  resize();
+
+  /** The untouched field, drawn once. Blitted under the displaced dots. */
+  function buildRest() {
+    rest.width = canvas.width; rest.height = canvas.height;
+    rctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    rctx.clearRect(0, 0, w, h);
+    rctx.fillStyle = 'rgba(240,240,242,0.3)';
+    rctx.beginPath();
+    for (var i = 0; i < total; i++) {
+      rctx.moveTo(rx[i] + DOT_R, ry[i]);
+      rctx.arc(rx[i], ry[i], DOT_R, 0, 6.2832);
+    }
+    rctx.fill();
+  }
+
   window.addEventListener('resize', resize);
-  document.addEventListener('mousemove', function (e) { mouseX = e.clientX; mouseY = e.clientY; });
+
+  // The loop is started rather than left running. It is needed only while the hero
+  // is on screen, the tab is visible, and either the cursor is over it or dots are
+  // still travelling home. Everywhere else it parks, and the page spends most of
+  // its life scrolled past the hero.
+  var raf = 0;
+  var onScreen = true;
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)');
+  function stopGrid() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+  function startGrid() {
+    if (raf || !onScreen || document.hidden || still.matches) return;
+    raf = requestAnimationFrame(tick);
+  }
+
+  document.addEventListener('mousemove', function (e) {
+    mouseX = e.clientX; mouseY = e.clientY;
+    startGrid();
+  });
   document.addEventListener('mouseleave', function () { mouseX = -9999; mouseY = -9999; });
 
   var rr = REPEL_R * REPEL_R;
+
+  /** Redraws the field. Returns true while any dot is still away from home. */
   function draw() {
+    var live = false;
     ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(rest, 0, 0, w, h);
     ctx.fillStyle = 'rgba(240,240,242,0.3)';
     ctx.beginPath();
     for (var i = 0; i < total; i++) {
+      var dx = ox[i] - rx[i], dy = oy[i] - ry[i];
+      if (dx * dx + dy * dy < SETTLED) continue;
       ctx.moveTo(ox[i] + DOT_R, oy[i]);
       ctx.arc(ox[i], oy[i], DOT_R, 0, 6.2832);
+      live = true;
     }
-    ctx.fill();
+    if (live) ctx.fill();
+    return live;
   }
+
   function tick() {
     for (var i = 0; i < total; i++) {
       var dx = ox[i] - mouseX, dy = oy[i] - mouseY;
@@ -1725,19 +1887,51 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
       if (d2 < rr && d2 > 0) {
         var d = Math.sqrt(d2);
         var f = (1 - d / REPEL_R) * REPEL_FORCE;
-        tx[i] = ox[i] + (dx / d) * f * SPACING;
-        ty2[i] = oy[i] + (dy / d) * f * SPACING;
+        ox[i] += (dx / d) * f * SPACING * RETURN_SPEED;
+        oy[i] += (dy / d) * f * SPACING * RETURN_SPEED;
       } else {
-        tx[i] = ox[i]; ty2[i] = oy[i];
+        // Home. This branch used to target the dot's OWN position, so a dot the
+        // cursor had touched never came back and the grid kept every dent for the
+        // rest of the session. RETURN_SPEED reads as a spring, so spring it is.
+        ox[i] += (rx[i] - ox[i]) * RETURN_SPEED;
+        oy[i] += (ry[i] - oy[i]) * RETURN_SPEED;
       }
-      ox[i] += (tx[i] - ox[i]) * RETURN_SPEED;
-      oy[i] += (ty2[i] - oy[i]) * RETURN_SPEED;
     }
-    draw();
-    requestAnimationFrame(tick);
+    raf = draw() ? requestAnimationFrame(tick) : 0;
   }
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) requestAnimationFrame(tick);
-  else draw();
+
+  resize();
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      onScreen = entries[0].isIntersecting;
+      if (onScreen) startGrid(); else stopGrid();
+    }, { threshold: 0 }).observe(canvas);
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) stopGrid(); else startGrid();
+  });
+  if (still.matches) draw(); else startGrid();
+
+  // HERO VIDEO — a ~20 MB clip decoding behind the whole hero. Nothing needs it once
+  // the hero is scrolled past, so it pauses out of view and resumes on the way back.
+  // It is muted and looping, so play() needs no gesture.
+  (function () {
+    var vid = document.getElementById('heroVideo');
+    if (!vid || !('IntersectionObserver' in window)) return;
+    var onScreen = true;
+    function sync() {
+      if (onScreen && !document.hidden) {
+        if (vid.paused) { var p = vid.play(); if (p && p.catch) p.catch(function () {}); }
+      } else if (!vid.paused) {
+        vid.pause();
+      }
+    }
+    new IntersectionObserver(function (entries) {
+      onScreen = entries[0].isIntersecting;
+      sync();
+    }, { threshold: 0 }).observe(vid);
+    document.addEventListener('visibilitychange', sync);
+  })();
 
   // RELEASES
   // The hero CTA and the two build cards carry hand-written fallback URLs for when
