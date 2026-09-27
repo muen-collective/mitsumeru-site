@@ -1,0 +1,18 @@
+# Kept out of the deployment. Vercel serves the repo root as static files, so
+# anything left here is fetchable by URL, including the .md files.
+
+# Internal notes and specs, not for the public site.
+README.md
+landing-page.md
+landing-copy.md
+
+# The four slider previews for the effects. Acceptance criterion 9 in
+# landing-page.md: not reachable from the landing.
+spherical-arcs.html
+spatial-wireframe.html
+ascii-water-reveal.html
+scan-button.html
+
+# Unreferenced design scratch.
+preview.png
+brand/mitsumeru-logo.svg
