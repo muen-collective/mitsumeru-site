@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Canvas backgrounds</title>
+    <title>Mitsumeru — A harness designed by a designer, for other designers</title>
     <style>
       html,
       body {
@@ -47,128 +47,56 @@
         color: #b9b6ae;
       }
 
-      code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 12px;
-        background: rgba(255, 255, 255, 0.08);
-        padding: 1px 5px;
-        border-radius: 4px;
+      /* ── hero ─────────────────────────────────────────────────────── */
+      .hero-lore {
+        font-size: 18px;
+        line-height: 1.4;
+        color: #b9b6ae;
+        margin: 0 0 24px;
+        max-width: 40ch;
       }
 
-      /* the tuning panel */
-      aside {
-        position: fixed;
-        right: 16px;
-        top: 16px;
-        z-index: 2;
-        width: 236px;
-        max-height: calc(100vh - 32px);
-        overflow: auto;
-        padding: 14px;
-        border-radius: 12px;
-        background: rgba(18, 18, 18, 0.72);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-      }
-
-      aside h2 {
-        margin: 0 0 10px;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.09em;
-        text-transform: uppercase;
-        color: #8a8781;
-      }
-
-      label {
-        display: block;
-        margin: 0 0 9px;
-        font-size: 11px;
-        color: #a5a29b;
-      }
-
-      label span {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 3px;
-      }
-
-      label b {
-        font-weight: 500;
+      .hero-lore span {
         color: #f2f0ea;
-        font-variant-numeric: tabular-nums;
       }
 
-      input[type='range'] {
-        width: 100%;
-        margin: 0;
-        accent-color: #87bbff;
+      .hero-support {
+        font-size: 14px;
+        color: #8a8781;
+        margin: 0 0 32px;
+        max-width: 42ch;
       }
 
-      .row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin: 0 0 9px;
-        font-size: 11px;
-        color: #a5a29b;
-      }
-
-      .row input {
-        accent-color: #87bbff;
-      }
-
-      button {
-        width: 100%;
-        padding: 7px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+      .hero-cta {
+        display: inline-block;
+        padding: 10px 24px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
         border-radius: 8px;
         background: rgba(255, 255, 255, 0.06);
         color: #f2f0ea;
-        font: inherit;
-        font-size: 11px;
-        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background 0.2s ease;
       }
 
-      button:hover {
+      .hero-cta:hover {
         background: rgba(255, 255, 255, 0.12);
       }
-    </style>
-    <style>
-      .cards {
-        display: grid;
-        gap: 16px;
-        margin-top: 28px;
+
+      /* ── problem ──────────────────────────────────────────────────── */
+      .problem {
+        margin-top: 28vh;
+        max-width: 42ch;
       }
 
-      a.card {
-        display: block;
-        padding: 18px 20px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.04);
-        text-decoration: none;
-        color: inherit;
+      .problem p {
+        font-size: 16px;
+        line-height: 1.5;
+        color: #9d9a93;
       }
 
-      a.card:hover {
-        background: rgba(255, 255, 255, 0.09);
-      }
-
-      a.card strong {
-        display: block;
-        font-size: 17px;
-        font-weight: 500;
-        margin-bottom: 4px;
-      }
-
-      a.card span {
-        color: #8a8781;
-        font-size: 13px;
-      }
-
-      /* 01 / 02 / 03 — the scroll narrative the morph follows */
+      /* ── 01 / 02 / 03 — the scroll narrative the morph follows ───── */
       .story {
         margin-top: 48px;
       }
@@ -210,6 +138,115 @@
         margin: 0;
         max-width: 34ch;
         color: #9d9a93;
+      }
+
+      /* ── proof / muen section ─────────────────────────────────────── */
+      .proof {
+        margin-top: 16vh;
+        padding: 0 clamp(24px, 5vw, 96px);
+        max-width: min(44vw, 62ch);
+      }
+
+      .proof h2 {
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #05e8e0;
+        margin: 0 0 40px;
+      }
+
+      .proof-grid {
+        display: grid;
+        gap: 32px;
+      }
+
+      .proof-item h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+        font-weight: 500;
+        color: #f2f0ea;
+      }
+
+      .proof-item p {
+        margin: 0;
+        font-size: 14px;
+        color: #8a8781;
+        max-width: 38ch;
+      }
+
+      .muen-block {
+        margin-top: 56px;
+        padding-top: 40px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .muen-block h3 {
+        margin: 0 0 8px;
+        font-size: 16px;
+        font-weight: 500;
+        color: #f2f0ea;
+      }
+
+      .muen-block p {
+        margin: 0;
+        font-size: 14px;
+        color: #8a8781;
+        max-width: 38ch;
+      }
+
+      /* ── close ────────────────────────────────────────────────────── */
+      .close {
+        margin-top: 20vh;
+        text-align: center;
+        padding: 0 24px;
+      }
+
+      .close h2 {
+        font-size: 30px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        margin: 0 0 24px;
+      }
+
+      /* ── footer ───────────────────────────────────────────────────── */
+      footer {
+        margin-top: 16vh;
+        padding: 40px clamp(24px, 5vw, 96px);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      footer .wordmark {
+        font-size: 16px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+      }
+
+      footer .links {
+        display: flex;
+        gap: 24px;
+      }
+
+      footer .links a {
+        color: #8a8781;
+        text-decoration: none;
+        font-size: 13px;
+        transition: color 0.2s ease;
+      }
+
+      footer .links a:hover {
+        color: #f2f0ea;
+      }
+
+      footer .legal {
+        width: 100%;
+        margin-top: 16px;
+        font-size: 11px;
+        color: #4a4844;
       }
 
       /* section rail */
@@ -259,9 +296,12 @@
           padding: 56vh 22px 30vh;
         }
 
-        /* the panel would sit on the card list at this width */
-        aside {
-          display: none;
+        .proof {
+          max-width: none;
+        }
+
+        .close {
+          margin-top: 12vh;
         }
       }
     </style>
@@ -270,46 +310,37 @@
     <div id="stage"></div>
 
     <main>
-      <h1>Canvas backgrounds</h1>
-      <p>
-        Four dependency-free background effects, ported from the Kinetic Particle Scenes Framer
-        previews. Each one is a single module you drop behind your content.
+      <!-- 1. Hero -->
+      <h1>A harness designed by a designer, for other designers.</h1>
+      <p class="hero-lore">
+        Your team wastes hours pulling data from scattered tools.
+        <span>Mitsumeru turns that into one conversation.</span>
       </p>
-      <div class="cards">
-        <a class="card" href="./spherical-arcs.html">
-          <strong>Spherical Arcs</strong>
-          <span>
-            A sphere of twisted latitude arcs with travelling light and a pointer-lit cap.
-          </span>
-        </a>
-        <a class="card" href="./spatial-wireframe.html">
-          <strong>Spatial Wireframe</strong>
-          <span>
-            A drifting point cloud rebuilt as a spanning tree each frame. Nodes are draggable.
-          </span>
-        </a>
-        <a class="card" href="./ascii-water-reveal.html">
-          <strong>ASCII Water Reveal</strong>
-          <span>
-            A wave simulation that draws its surface as ASCII glyphs. Move the pointer to stir it.
-          </span>
-        </a>
-        <a class="card" href="./scan-button.html">
-          <strong>Quick Scan Button</strong>
-          <span>
-            A bordered button with a scanning rule and a per-character text reveal on hover.
-          </span>
-        </a>
+      <p class="hero-support">
+        BYOK out of the box. Process and model agnostic. The agent handles the
+        engineering — you stay focused on design.
+      </p>
+      <a class="hero-cta" href="#">Get Started</a>
+
+      <!-- 2. Problem -->
+      <div class="problem">
+        <p>
+          Other harnesses are built around features. DSH is built around process.
+          Visualize, Build, Polish — the loop every designer already runs. The agent
+          carries the engineering. You stay in the design loop.
+        </p>
       </div>
 
+      <!-- 3. 01 / 02 / 03 narrative -->
       <div class="story">
         <section data-stage="0">
           <div class="panel">
             <span class="num">01</span>
-            <h3>Wireframe</h3>
+            <h3>Visualize</h3>
             <p>
-              Sixteen points, held together by the shortest lines between them. The edge set is
-              rebuilt every frame, so the shape is only ever whatever the space currently allows.
+              The designer sees the final product in their head. Scattered points, the
+              shape emerging. DSH gives you the canvas to sketch that vision — bring your
+              own keys, connect any provider, adapt to your image source and model.
             </p>
           </div>
         </section>
@@ -317,10 +348,12 @@
         <section data-stage="1">
           <div class="panel">
             <span class="num">02</span>
-            <h3>Polygon</h3>
+            <h3>Build</h3>
             <p>
-              Twelve corners, thirty edges, twenty faces. A regular icosahedron has nothing left to
-              remove and nothing left to add — back faces fall away into the dark.
+              Prompt the agent to build it. The agent carries the technical part. Muen
+              builds the skills, plugins, and system prompts — first plugin ships: AI
+              image and video generation. Next: design systems, project starter. You stay
+              focused on design, not engineering.
             </p>
           </div>
         </section>
@@ -328,10 +361,11 @@
         <section data-stage="2">
           <div class="panel">
             <span class="num">03</span>
-            <h3>Sphere</h3>
+            <h3>Polish</h3>
             <p>
-              The same volume, smoothed past the point where any corner survives. Twenty arcs run
-              pole to pole, each one twisted by its own latitude.
+              Refine before publishing. The DSH plugin expands forever — add a RunningHub
+              workflow by pasting a URL, build a custom UI panel in minutes. Your workflow,
+              not ours. What the user actually touches.
             </p>
           </div>
         </section>
@@ -344,10 +378,49 @@
       <span data-rail="2">03</span>
     </nav>
 
-    <aside>
-      <h2>Backgrounds</h2>
-      <button id="reset">Reset</button>
-    </aside>
+    <!-- 4. Proof / Muen -->
+    <div class="proof">
+      <h2>Why DSH</h2>
+      <div class="proof-grid">
+        <div class="proof-item">
+          <h3>BYOK out of the box</h3>
+          <p>Bring your own API keys. No vendor lock-in. Works with the providers you already pay for.</p>
+        </div>
+        <div class="proof-item">
+          <h3>Model and process agnostic</h3>
+          <p>Switch between image gen, LLMs, and custom pipelines without changing tools.</p>
+        </div>
+        <div class="proof-item">
+          <h3>Built around process, not features</h3>
+          <p>Other harnesses list capabilities. DSH maps to the design workflow: Visualize, Build, Polish. Plugins, skills, and prompts built by Muen to support that loop.</p>
+        </div>
+        <div class="proof-item">
+          <h3>RunningHub integration</h3>
+          <p>Paste a workflow URL and get a working UI panel. No config files. No boilerplate.</p>
+        </div>
+      </div>
+      <div class="muen-block">
+        <h3>Muen — the agency and steward</h3>
+        <p>Muen designs the skills, plugins, and system prompts that make DSH work. Not a feature list — a process. The harness exists because the agency needed it to exist.</p>
+      </div>
+    </div>
+
+    <!-- 5. Close -->
+    <div class="close">
+      <h2>Mitsumeru</h2>
+      <a class="hero-cta" href="#">Get Started</a>
+    </div>
+
+    <!-- 6. Footer -->
+    <footer>
+      <div class="wordmark">Mitsumeru</div>
+      <div class="links">
+        <a href="#">Download</a>
+        <a href="#">GitHub</a>
+        <a href="#">Discord</a>
+      </div>
+      <div class="legal">&copy; 2025 Mitsumeru. All rights reserved.</div>
+    </footer>
 
     <script type="module">
       import { createShapeMorph } from './src/shape-morph.js';
