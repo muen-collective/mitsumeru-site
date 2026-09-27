@@ -1,13 +1,18 @@
 # Kept out of the deployment. Vercel serves the repo root as static files, so
-# anything left here is fetchable by URL, including the .md files.
+# anything left here is fetchable by URL, including markdown.
 
-# Internal notes and specs, not for the public site.
+# The two internal specs used to live in this repo. They were moved out on
+# 2026-09-27 to the product root:
+#   docs/initiatives/mitsumeru-site-landing-page.md
+#   docs/initiatives/mitsumeru-site-landing-copy.md
+# They are listed here anyway, as a guard: if a working doc is ever added back
+# to this repo, it still does not ship.
 README.md
 landing-page.md
 landing-copy.md
 
-# The four slider previews for the effects. Acceptance criterion 9 in
-# landing-page.md: not reachable from the landing.
+# The four slider previews for the effects. The landing page spec calls for
+# them to be unreachable from the landing.
 spherical-arcs.html
 spatial-wireframe.html
 ascii-water-reveal.html
