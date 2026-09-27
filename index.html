@@ -30,6 +30,26 @@
   src: url('red-alert.ttf') format('truetype');
   font-weight: 400; font-style: normal; font-display: block;
 }
+@font-face {
+  font-family: 'Higure Gothic';
+  src: url('fonts/HigureGothic-Regular.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Higure Gothic';
+  src: url('fonts/HigureGothic-Medium.ttf') format('truetype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Higure Gothic';
+  src: url('fonts/HigureGothic-Bold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Higure Gothic';
+  src: url('fonts/HigureGothic-Black.ttf') format('truetype');
+  font-weight: 900; font-style: normal; font-display: swap;
+}
 
 /* EVA DARK (Unit 01).
    Values are the Mitsu design system's, not approximations: DESIGN.md specifies
@@ -274,7 +294,10 @@ header a.gh:hover { color: var(--fg); }
   position: relative;
   display: flex; align-items: center; justify-content: flex-end;
   gap: 8px; height: 30px; margin-bottom: 22px;
+  cursor: pointer; pointer-events: auto;
 }
+.rail-group:hover .rail-num { color: #05e8e0; }
+.rail-group:hover .rail-tick { background: #05e8e0; }
 .rail-group:last-child { margin-bottom: 0; }
 .rail-num {
   font-family: var(--font); font-size: 12px; line-height: 1;
@@ -307,8 +330,8 @@ header a.gh:hover { color: var(--fg); }
 .rail-needle {
   position: absolute; left: calc(50% + 2px); top: 50%;
   width: 30px; height: 1px; border-radius: 9999px;
-  background: var(--fg);
-  box-shadow: 0 0 8px rgba(240,240,242,0.35);
+  background: #05e8e0;
+  box-shadow: 0 0 8px rgba(5, 232, 224, 0.45);
   transform: translateY(0);
 }
 .scrolly {
@@ -364,6 +387,12 @@ header a.gh:hover { color: var(--fg); }
   font-family: var(--sans); font-size: 13.5px; line-height: 1.5; color: var(--muted-fg); display: block;
 }
 
+/* panel-copy entrance: each child fold staggers via --stagger */
+.panel-copy .fold { margin-bottom: 0; }
+.panel-copy .fold-inner {
+  transition-delay: calc(var(--stagger, 0) * 0.12s);
+}
+
 /* The cards are gone. The visual half is the object: one polygon, pinned in
    the column, that collapses to a dot and expands again as the panels change
    over. It is hidden below the grid breakpoint, the same point the rail goes. */
@@ -396,6 +425,33 @@ header a.gh:hover { color: var(--fg); }
    each panel's kicker, so nothing is lost. */
 @media (max-width: 1099px) {
   .rail { display: none; }
+}
+
+/* ── fold entrance ────────────────────────────────────────────────────────
+   Content starts a full height below an INVISIBLE FOLD (overflow: hidden
+   wrapper) and slides up into place. The wrapper's height IS the content's
+   height because transforms do not affect layout, so translateY(100%) parks
+   the content precisely out of sight. Bidirectional — re-runs on scroll back.
+   ──────────────────────────────────────────────────────────────────────── */
+.fold {
+  overflow: hidden;
+}
+.fold.fold-visible {
+  overflow: visible;
+}
+.fold-inner {
+  transform: translateY(100%);
+  transition: transform 0.65s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.fold-visible > .fold-inner {
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fold-inner,
+  .fold-visible > .fold-inner {
+    transform: none;
+    transition: none;
+  }
 }
 
 /* COMPOSER — the harness's own composer running a scripted turn. It types a
@@ -624,6 +680,7 @@ header a.gh:hover { color: var(--fg); }
 .muen-block {
   margin-top: 48px; padding-top: 36px;
   border-top: 1px solid var(--border);
+  overflow: visible;
 }
 .muen-block h3 {
   font-family: var(--sans); font-size: 15px; font-weight: 600;
@@ -631,8 +688,33 @@ header a.gh:hover { color: var(--fg); }
 }
 .muen-block p {
   font-family: var(--sans); font-size: 13px; line-height: 1.55;
-  color: var(--muted-fg); margin: 0; max-width: 38ch;
+  color: var(--muted-fg); margin: 0 0 40px; max-width: 38ch;
 }
+.muen-block .muen-cta-wrap {
+  margin-top: 0;
+}
+.muen-logo {
+  margin-bottom: 40px;
+}
+.muen-logo-img {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+.muen-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 18px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--fg); text-decoration: none; font-family: var(--sans);
+  font-size: 13px; font-weight: 500;
+  transition: border-color .2s, background .2s;
+  align-self: flex-start;
+}
+.muen-cta:hover {
+  border-color: #05e8e0;
+  background: rgba(5, 232, 224, 0.06);
+}
+.muen-cta svg { color: #05e8e0; }
 @media (max-width: 640px) {
   .proof-grid { grid-template-columns: 1fr; }
 }
@@ -820,7 +902,9 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
 
 <section class="composer-sec" id="composer">
   <div class="wrap">
-    <h2 class="cx-tagline"><span class="lead">Let the design emerge.</span> Mitsumeru implements while you direct.</h2>
+    <div class="fold" style="--stagger:0"><div class="fold-inner">
+      <h2 class="cx-tagline"><span class="lead">Let the design emerge.</span> Mitsumeru implements while you direct.</h2>
+    </div></div>
 
     <div class="composer-stage" aria-hidden="true">
       <div class="cx-status">
@@ -913,11 +997,11 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
     <div class="scrolly-grid">
       <div class="blocks">
         <div class="block" data-panel="0">
-          <div class="panel-copy reveal">
-            <span class="panel-kicker">01 &mdash; Visualize</span>
-            <h3>The designer sees the final product in their head.</h3>
-            <p class="body">Scattered points, the shape emerging. Mitsumeru gives you the canvas to sketch that vision &mdash; bring your own keys, connect any provider, adapt to your image source and model.</p>
-            <div class="rows">
+          <div class="panel-copy">
+            <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">01 &mdash; Visualize</span></div></div>
+            <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>The designer sees the final product in their head.</h3></div></div>
+            <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">Scattered points, the shape emerging. Mitsumeru gives you the canvas to sketch that vision &mdash; bring your own keys, connect any provider, adapt to your image source and model.</p></div></div>
+            <div class="rows fold" style="--stagger:3"><div class="fold-inner">
               <div class="row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 8.5v4M5 15.5v-3h14v3"/></svg>
                 <span>BYOK &mdash; bring your own API keys</span>
@@ -930,16 +1014,16 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12h8"/></svg>
                 <span>Adapts to your image source</span>
               </div>
-            </div>
+            </div></div>
           </div>
         </div>
 
         <div class="block" data-panel="1">
-          <div class="panel-copy reveal">
-            <span class="panel-kicker">02 &mdash; Build</span>
-            <h3>Prompt the agent to build it.</h3>
-            <p class="body">The agent carries the technical part. Muen builds the skills, plugins, and system prompts &mdash; first plugin ships: AI image and video generation. Next: design systems, project starter. You stay focused on design, not engineering.</p>
-            <div class="rows">
+          <div class="panel-copy">
+            <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">02 &mdash; Build</span></div></div>
+            <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>Prompt the agent to build it.</h3></div></div>
+            <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">The agent carries the technical part. Muen builds the skills, plugins, and system prompts &mdash; first plugin ships: AI image and video generation. Next: design systems, project starter. You stay focused on design, not engineering.</p></div></div>
+            <div class="rows fold" style="--stagger:3"><div class="fold-inner">
               <div class="row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
                 <span>Skills and plugins built by Muen</span>
@@ -952,16 +1036,16 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
                 <span>Design systems and project starter next</span>
               </div>
-            </div>
+            </div></div>
           </div>
         </div>
 
         <div class="block" data-panel="2">
-          <div class="panel-copy reveal">
-            <span class="panel-kicker">03 &mdash; Polish</span>
-            <h3>Refine before publishing.</h3>
-            <p class="body">The Mitsumeru plugin expands forever &mdash; add a RunningHub workflow by pasting a URL, build a custom UI panel in minutes. Your workflow, not ours. What the user actually touches.</p>
-            <div class="rows">
+          <div class="panel-copy">
+            <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">03 &mdash; Polish</span></div></div>
+            <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>Refine before publishing.</h3></div></div>
+            <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">The Mitsumeru plugin expands forever &mdash; add a RunningHub workflow by pasting a URL, build a custom UI panel in minutes. Your workflow, not ours. What the user actually touches.</p></div></div>
+            <div class="rows fold" style="--stagger:3"><div class="fold-inner">
               <div class="row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="14" r="4"/><path d="M12 12l8-8M18 4h3v3"/></svg>
                 <span>RunningHub &mdash; paste a URL, get a panel</span>
@@ -974,7 +1058,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 16l5-5 4 3 7-7"/><path d="M15 7h5v5"/></svg>
                 <span>Your workflow, not ours</span>
               </div>
-            </div>
+            </div></div>
           </div>
         </div>
       </div>
@@ -991,45 +1075,54 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
 
   <section class="proof-sec" id="proof">
     <div class="wrap">
-      <div class="kicker">Why Mitsumeru</div>
+      <div class="fold" style="--stagger:0"><div class="fold-inner"><div class="kicker">Why Mitsumeru</div></div></div>
       <div class="proof-grid">
-        <div class="proof-item">
+        <div class="proof-item fold" style="--stagger:1"><div class="fold-inner">
           <h3>BYOK out of the box</h3>
           <p>Bring your own API keys. No vendor lock-in. Works with the providers you already pay for.</p>
-        </div>
-        <div class="proof-item">
+        </div></div>
+        <div class="proof-item fold" style="--stagger:2"><div class="fold-inner">
           <h3>Model and process agnostic</h3>
           <p>Switch between image gen, LLMs, and custom pipelines without changing tools.</p>
-        </div>
-        <div class="proof-item">
+        </div></div>
+        <div class="proof-item fold" style="--stagger:3"><div class="fold-inner">
           <h3>Built around process, not features</h3>
           <p>Other harnesses list capabilities. Mitsumeru maps to the design workflow: Visualize, Build, Polish. Plugins, skills, and prompts built by Muen to support that loop.</p>
-        </div>
-        <div class="proof-item">
+        </div></div>
+        <div class="proof-item fold" style="--stagger:4"><div class="fold-inner">
           <h3>RunningHub integration</h3>
           <p>Paste a workflow URL and get a working UI panel. No config files. No boilerplate.</p>
+        </div></div>
+      </div>
+      <div class="muen-block fold" style="--stagger:5"><div class="fold-inner">
+        <div class="muen-logo">
+          <img src="assets/muen-collective-logo.svg" alt="Muen Collective" class="muen-logo-img" />
         </div>
-      </div>
-      <div class="muen-block">
-        <h3>Muen &mdash; the agency and steward</h3>
         <p>Muen designs the skills, plugins, and system prompts that make Mitsumeru work. Not a feature list &mdash; a process. The harness exists because the agency needed it to exist.</p>
-      </div>
+        <a class="muen-cta" id="muenBtn" href="https://muen-collective.com" target="_blank" rel="noopener">
+          <span class="muen-cta-text">Visit muen-collective.com</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
+        </a>
+      </div></div>
     </div>
   </section>
 
   <section class="dl" id="download">
     <div class="wrap">
-      <div class="kicker">Download</div>
-      <h2>Get Mitsumeru for macOS.</h2>
-      <p class="sub">Chosen by the chip in your Mac. The current release, read from the app repository.</p>
+      <div class="fold" style="--stagger:0"><div class="fold-inner"><div class="kicker">Download</div></div></div>
+      <div class="fold" style="--stagger:1"><div class="fold-inner"><h2>Get Mitsumeru for macOS.</h2></div></div>
+      <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="sub">Chosen by the chip in your Mac. The current release, read from the app repository.</p></div></div>
 
-      <div class="facts">
-        <div class="cell"><span class="k">Latest</span><span class="v idle" id="factVersion">&mdash;</span></div>
-        <div class="cell"><span class="k">Published</span><span class="v idle" id="factDate">&mdash;</span></div>
-        <div class="cell"><span class="k">This machine</span><span class="v" id="factHost">macOS</span></div>
-      </div>
+      <div class="facts fold" style="--stagger:3"><div class="fold-inner">
+        <div class="facts">
+          <div class="cell"><span class="k">Latest</span><span class="v idle" id="factVersion">&mdash;</span></div>
+          <div class="cell"><span class="k">Published</span><span class="v idle" id="factDate">&mdash;</span></div>
+          <div class="cell"><span class="k">This machine</span><span class="v" id="factHost">macOS</span></div>
+        </div>
+      </div></div>
 
-      <div class="builds">
+      <div class="fold" style="--stagger:4"><div class="fold-inner">
+        <div class="builds">
         <a class="build" id="dlCardArm" href="https://github.com/muen-collective/mitsumeru-app/releases/download/v0.2.3/Mitsumeru-0.2.3-arm64.dmg">
           <span class="bt">Apple Silicon</span>
           <span class="bf">M-series chips</span>
@@ -1045,9 +1138,12 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
           <span class="bf">Every asset, past and present</span>
           <span class="ba">Open the list &rarr;</span>
         </button>
-      </div>
+        </div>
+      </div></div>
 
-      <p class="note">Worth knowing before you install: the app wraps a DeepSeek Harness release pinned per build, and installs no background service. The Windows installer exists in the release but is unsigned, so it is not offered here.</p>
+      <div class="fold" style="--stagger:5"><div class="fold-inner">
+        <p class="note">Worth knowing before you install: the app wraps a DeepSeek Harness release pinned per build, and installs no background service. The Windows installer exists in the release but is unsigned, so it is not offered here.</p>
+      </div></div>
     </div>
   </section>
 
@@ -1172,6 +1268,25 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
     // state over or the button stays at opacity 0.
     dlBtn.classList.add('visible');
     window.mitsumeruScanButton = btn;
+
+    // Muen scan button — same as hero but cyan accent
+    var muenBtn = document.getElementById('muenBtn');
+    if (muenBtn) {
+      var muenBtnEl = mod.createScanButton({
+        label: 'Visit muen-collective.com',
+        variant: 'one',
+        accentColor: '#05e8e0',
+        lineColor: '#ffffff',
+        textColor: '#ffffff',
+        fontFamily: tok('--sans', 'Inter, system-ui, sans-serif'),
+        href: muenBtn.href,
+      });
+      muenBtnEl.element.removeAttribute('target');
+      muenBtnEl.element.removeAttribute('rel');
+      muenBtnEl.element.id = 'muenBtn';
+      muenBtnEl.element.classList.add('muen-cta');
+      muenBtn.replaceWith(muenBtnEl.element);
+    }
   });
   var dlCardArm = document.getElementById('dlCardArm');
   var dlCardIntel = document.getElementById('dlCardIntel');
@@ -1496,6 +1611,17 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
     render();
+
+    // Click to navigate: tapping a rail number scrolls to that section.
+    for (var c = 0; c < groups.length; c++) {
+      (function (idx) {
+        groups[idx].addEventListener('click', function () {
+          if (sections[idx]) {
+            sections[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      })(c);
+    }
   })();
 
   // Entrance, from the animate-entrance recipe: fade + rise on first scroll-in,
@@ -1520,6 +1646,30 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
     }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
     var revealed = document.querySelectorAll('.reveal');
     for (var k = 0; k < revealed.length; k++) seen.observe(revealed[k]);
+  })();
+
+  // FOLD ENTRANCE — bidirectional. Each .fold element slides up from behind
+  // an invisible overflow clip when it enters the viewport, and slides back
+  // down when it leaves. Stagger is set via --stagger custom property in HTML.
+  (function () {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      var els = document.querySelectorAll('.fold');
+      for (var r = 0; r < els.length; r++) els[r].classList.add('fold-visible');
+      return;
+    }
+    if (!('IntersectionObserver' in window)) return;
+    var foldObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        var el = e.target;
+        if (e.isIntersecting) {
+          el.classList.add('fold-visible');
+        } else {
+          el.classList.remove('fold-visible');
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -10% 0px' });
+    var folds = document.querySelectorAll('.fold');
+    for (var f = 0; f < folds.length; f++) foldObs.observe(folds[f]);
   })();
 
   // PARTICLE GRID

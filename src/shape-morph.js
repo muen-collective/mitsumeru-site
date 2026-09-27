@@ -813,6 +813,62 @@ export function createShapeMorph(container, options = {}) {
     const oy = height / 2;
     const palette = buildPalette(s);
 
+    // --- pointer displacement -----------------------------------------------
+    // Each dot is pushed away from the cursor. The force falls off with the
+    // inverse square of distance, creating a magnetic ripple that distorts the
+    // rigid geometry into something organic. Lines follow their endpoints.
+    const ptrActive = pointer.active && !reduced;
+    const ptrRadius = R * 1.8;   // influence radius in screen px
+    const ptrStrength = R * 0.35; // max displacement at zero distance
+
+    function displace(list) {
+      if (!ptrActive) return list;
+      const mx = pointer.x - ox;
+      const my = pointer.y - oy;
+      const off = {};
+
+      // Displace dots first, record offsets by index.
+      for (let i = 0; i < list.dots.length; i++) {
+        const d = list.dots[i];
+        const dx = d.x - mx;
+        const dy = d.y - my;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 1 || dist > ptrRadius) { off[i] = [0, 0]; continue; }
+        const force = (1 - dist / ptrRadius);
+        const push = force * force * ptrStrength;
+        const nx = dx / dist;
+        const ny = dy / dist;
+        off[i] = [nx * push, ny * push];
+        d.x += off[i][0];
+        d.y += off[i][1];
+        // Brighten displaced dots — the chaos glows.
+        d.alpha = Math.min(1, d.alpha + force * 0.35);
+        d.size *= 1 + force * 0.25;
+      }
+
+      // Lines reference endpoints. Displace each vertex directly.
+      for (const l of list.lines) {
+        const verts = [
+          { xk: 'x1', yk: 'y1', px: l.x1, py: l.y1 },
+          { xk: 'x2', yk: 'y2', px: l.x2, py: l.y2 },
+        ];
+        for (const v of verts) {
+          const dx = v.px - mx;
+          const dy = v.py - my;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 1 || dist > ptrRadius) continue;
+          const force = (1 - dist / ptrRadius);
+          const push = force * force * ptrStrength * 0.7;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          l[v.xk] += nx * push;
+          l[v.yk] += ny * push;
+        }
+      }
+
+      return list;
+    }
+
     // --- draw -------------------------------------------------------------
     if (reduced) {
       // no theatre: show the shape the scroll points at, fully formed
@@ -822,21 +878,21 @@ export function createShapeMorph(container, options = {}) {
         handle.index = shape;
         handle.onStage?.(stage, shape);
       }
-      const list = builderAt(shape)(time, s, R);
+      const list = displace(builderAt(shape)(time, s, R));
       paint(ctx, list, { ox, oy, k: 1, alpha: 1 }, palette);
       return;
     }
 
     if (state.settled) {
-      const list = builderAt(state.from)(time, s, R);
+      const list = displace(builderAt(state.from)(time, s, R));
       paint(ctx, list, { ox, oy, k: 1, alpha: 1 }, palette);
     } else {
       if (state.fromAlpha > 0.004) {
-        const out = builderAt(state.from)(time, s, R);
+        const out = displace(builderAt(state.from)(time, s, R));
         paint(ctx, out, { ox, oy, k: state.fromK, alpha: state.fromAlpha }, palette);
       }
       if (state.toAlpha > 0.004) {
-        const into = builderAt(state.to)(time, s, R);
+        const into = displace(builderAt(state.to)(time, s, R));
         paint(ctx, into, { ox, oy, k: state.toK, alpha: state.toAlpha }, palette);
       }
       paintCore(ctx, ox, oy, Math.max(2.2, R * 0.028), state.core, s);
