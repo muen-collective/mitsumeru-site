@@ -1863,7 +1863,20 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
   var SPACING = 5, DOT_R = 0.6, REPEL_R = 80, REPEL_FORCE = 2.5, RETURN_SPEED = 0.08;
   var w, h, cols, rows2, total;
   var ox, oy, rx, ry;              // live and resting positions
-  var mouseX = -9999, mouseY = -9999;
+  var mouseX = -9999, mouseY = -9999;   // cursor, in viewport coordinates
+  var canvasX = 0, canvasY = 0;         // where the canvas sits in the viewport
+
+  /**
+   * Record where the canvas currently is. The dots are drawn in canvas coordinates
+   * but the cursor arrives in viewport coordinates, and the two only coincide while
+   * the page is at the top. Reading the real offset instead of assuming means the
+   * hole sits under the cursor at any scroll position.
+   */
+  function measureCanvas() {
+    var r = canvas.getBoundingClientRect();
+    canvasX = r.left;
+    canvasY = r.top;
+  }
   var SETTLED = 0.0004;            // px squared, under which a dot counts as home
 
   var rest = document.createElement('canvas');
@@ -1891,6 +1904,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
       }
     }
     buildRest();
+    measureCanvas();
   }
 
   /** The untouched field, drawn once. Blitted under the displaced dots. */
@@ -1928,6 +1942,13 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
   });
   document.addEventListener('mouseleave', function () { mouseX = -9999; mouseY = -9999; });
 
+  // The canvas scrolls with the page, so it slides under a stationary cursor. The
+  // origin is re-read on scroll as well, or a hole would sit wherever the cursor was
+  // when the page last moved. Only while the hero is on screen; nothing else reads it.
+  window.addEventListener('scroll', function () {
+    if (onScreen) measureCanvas();
+  }, { passive: true });
+
   var rr = REPEL_R * REPEL_R;
 
   /** Redraws the field. Returns how many dots are away from their cached home. */
@@ -1958,8 +1979,13 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
    */
   function push() {
     var peak = 0;
+    // The cursor comes in viewport coordinates and the dots live in canvas
+    // coordinates, so the difference is taken here, every frame. Doing it at event
+    // time instead bakes in a position that scrolling invalidates.
+    var mx = mouseX > -9000 ? mouseX - canvasX : -9999;
+    var my = mouseY > -9000 ? mouseY - canvasY : -9999;
     for (var i = 0; i < total; i++) {
-      var dx = ox[i] - mouseX, dy = oy[i] - mouseY;
+      var dx = ox[i] - mx, dy = oy[i] - my;
       var d2 = dx * dx + dy * dy;
       if (d2 >= rr || d2 === 0) continue;
       var d = Math.sqrt(d2);
