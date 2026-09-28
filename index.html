@@ -1921,9 +1921,9 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
 
   var rr = REPEL_R * REPEL_R;
 
-  /** Redraws the field. Returns true while any dot is still away from home. */
+  /** Redraws the field. Returns how many dots are away from their cached home. */
   function draw() {
-    var live = false;
+    var displaced = 0;
     ctx.clearRect(0, 0, w, h);
     ctx.drawImage(rest, 0, 0, w, h);
     ctx.fillStyle = 'rgba(240,240,242,0.3)';
@@ -1933,30 +1933,80 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
       if (dx * dx + dy * dy < SETTLED) continue;
       ctx.moveTo(ox[i] + DOT_R, oy[i]);
       ctx.arc(ox[i], oy[i], DOT_R, 0, 6.2832);
-      live = true;
+      displaced++;
     }
-    if (live) ctx.fill();
-    return live;
+    if (displaced) ctx.fill();
+    return displaced;
   }
 
-  function tick() {
+  /**
+   * Push the dots the cursor is over. Returns true while any of them is still
+   * moving.
+   *
+   * There is deliberately no restoring branch. A dot the cursor has pushed stays
+   * pushed, which is how this grid has always behaved: sweep the mouse around and
+   * the holes it leaves are permanent.
+   */
+  function push() {
+    var peak = 0;
     for (var i = 0; i < total; i++) {
       var dx = ox[i] - mouseX, dy = oy[i] - mouseY;
       var d2 = dx * dx + dy * dy;
-      if (d2 < rr && d2 > 0) {
-        var d = Math.sqrt(d2);
-        var f = (1 - d / REPEL_R) * REPEL_FORCE;
-        ox[i] += (dx / d) * f * SPACING * RETURN_SPEED;
-        oy[i] += (dy / d) * f * SPACING * RETURN_SPEED;
-      } else {
-        // Home. This branch used to target the dot's OWN position, so a dot the
-        // cursor had touched never came back and the grid kept every dent for the
-        // rest of the session. RETURN_SPEED reads as a spring, so spring it is.
-        ox[i] += (rx[i] - ox[i]) * RETURN_SPEED;
-        oy[i] += (ry[i] - oy[i]) * RETURN_SPEED;
-      }
+      if (d2 >= rr || d2 === 0) continue;
+      var d = Math.sqrt(d2);
+      var f = (1 - d / REPEL_R) * REPEL_FORCE;
+      var step = f * SPACING * RETURN_SPEED;
+      ox[i] += (dx / d) * step;
+      oy[i] += (dy / d) * step;
+      if (step > peak) peak = step;
     }
-    raf = draw() ? requestAnimationFrame(tick) : 0;
+    // Only a push you could actually see counts as motion. A dot creeps toward the
+    // edge of the cursor's influence asymptotically and never quite arrives, so
+    // testing "did anything get pushed at all" holds the loop open forever while
+    // the cursor sits still. Below this the field is visually stopped and gets baked.
+    return peak > 0.05;
+  }
+
+  /**
+   * Fold the live dents into the cached field and adopt them as the new home.
+   *
+   * This is what makes permanent holes affordable. Without it, every dot the cursor
+   * has ever touched counts as displaced for the rest of the session, so the live
+   * redraw drifts back toward all ~42k dots and the caching stops paying for
+   * itself. After a bake those dots cost nothing per frame: they are part of the
+   * background blit, and the holes stay on screen exactly as they were.
+   */
+  function bake() {
+    var painted = false;
+    rctx.fillStyle = 'rgba(240,240,242,0.3)';
+    for (var i = 0; i < total; i++) {
+      var dx = ox[i] - rx[i], dy = oy[i] - ry[i];
+      if (dx * dx + dy * dy < SETTLED) continue;
+      // Clear the dot where it used to sit, then queue it at its new position.
+      rctx.clearRect(rx[i] - DOT_R - 0.6, ry[i] - DOT_R - 0.6, DOT_R * 2 + 1.2, DOT_R * 2 + 1.2);
+      if (!painted) { rctx.beginPath(); painted = true; }
+      rctx.moveTo(ox[i] + DOT_R, oy[i]);
+      rctx.arc(ox[i], oy[i], DOT_R, 0, 6.2832);
+      rx[i] = ox[i]; ry[i] = oy[i];
+    }
+    if (painted) rctx.fill();
+  }
+
+  // Enough live dents that baking them is cheaper than redrawing them every frame.
+  var BAKE_LIMIT = 1200;
+
+  function tick() {
+    var pushing = push();
+    var displaced = draw();
+
+    // Bake when the pile gets big, or once nothing is pushing any more. The dents
+    // stay visible either way; they just stop costing a redraw each frame.
+    if (displaced > BAKE_LIMIT || !pushing) {
+      bake();
+      draw();
+    }
+
+    raf = pushing ? requestAnimationFrame(tick) : 0;
   }
 
   resize();
