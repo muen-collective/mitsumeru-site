@@ -990,6 +990,13 @@ export function createShapeMorph(container, options = {}) {
   handle.refresh();
   requestAnimationFrame(() => handle.refresh());
 
+  // The webfont lands later than both of those. When it swaps in the panels change
+  // height, so the anchors measured above go stale and the shapes peak slightly off
+  // their panels until something else forces a re-measure.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => handle.refresh());
+  }
+
   rafId = requestAnimationFrame(tick);
 
   handle.stop = () => {
