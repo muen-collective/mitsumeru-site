@@ -346,6 +346,18 @@ header a.gh:hover { color: var(--fg); }
 .scrolly::after { left: auto; right: calc(50% - 700px); }
 @media (max-width: 1440px) { .scrolly::before, .scrolly::after { display: none; } }
 
+.method-heading {
+   position: relative; top: 96px;
+   max-width: 1400px;
+   padding: clamp(40px, 6vh, 80px) clamp(28px, 4vw, 56px) 40px;
+ }
+ .method-heading h1 {
+   font-family: var(--sans); font-size: clamp(32px, 5vw, 56px);
+   font-weight: 700; line-height: 1.05; letter-spacing: -0.035em;
+   color: var(--fg); margin: 0 0 24px;
+ }
+ 
+
 /* Two columns: left text scrolls, right cards PIN. */
 .scrolly-grid {
   display: grid;
@@ -1003,10 +1015,10 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
 <section class="composer-sec" id="composer">
   <div class="wrap">
     <div class="fold" style="--stagger:0"><div class="fold-inner">
-      <h2 class="cx-tagline"><span class="lead">Let the design emerge.</span> Mitsumeru implements while you direct.</h2>
+      <h2 class="cx-tagline">Mitsumeru is an open-source harness built for designers: design process in the age of agentic work. The process is lived, not assembled. It comes from three decades inside design: architecture, fashion, product UI/UX.</h2>
     </div></div>
 
-    <p class="cx-sub">It looks like a chat box. It is not one. In the assistant you already use, the reply is the deliverable. Here the box is a control surface and the work happens behind it. What comes back is not an answer. It is the thing, built.</p>
+    <p class="cx-sub">An idea is useful only when it is brought before the eye, tested, and changed. Mitsumeru is an instrument for this work. It directs AI toward the image, the film, the code, and the construction of a working prototype.</p>
 
     <div class="composer-stage" aria-hidden="true">
       <div class="cx-status">
@@ -1077,7 +1089,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
     <div class="cx-words">
       <div>
         <h4>Mission</h4>
-        <p>Mitsumeru is an open-source harness built for designers: design process in the age of agentic work. The process is lived, not assembled. It comes from three decades inside design: architecture, fashion, product UI/UX.</p>
+        <p>Mitsumeru exists to give designers more room to imagine and make. AI lowers the cost of experimentation, so ideas once limited by time, budget, or production capacity can be seen, tested, and brought into the world.</p>
       </div>
     </div>
   </div>
@@ -1097,6 +1109,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
 <div class="split-strip" id="rgbSplitStrip" aria-hidden="true"></div>
 
   <section class="scrolly" id="panels">
+    <div class="wrap method-heading"><h1>The Muen Method</h1></div>
     <!-- The rail is a RULER: the scale (01/02/03) is static, one needle travels down
          it as the left text scrolls, and a small static marker sits at the midpoint
          as the reading point. -->
@@ -1120,9 +1133,9 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
       <div class="blocks">
         <div class="block" data-panel="0">
           <div class="panel-copy">
-            <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">01 &mdash; Visualize</span></div></div>
-            <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>Everything begins abstract.</h3></div></div>
-            <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">A feeling, a direction, a half-formed idea. This phase is abstract whether the work ends up visual or ends up solving something. Abstract things cannot be judged, only instantiated, and that is the harness's job here: make it concrete fast enough to react to. Nothing is decided yet.</p></div></div>
+            <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">01 &mdash; Imagine</span></div></div>
+            <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>The idea takes shape.</h3></div></div>
+            <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">Start with a feeling, image, question, or problem. Mitsumeru helps you make a first version you can see and judge.</p></div></div>
             <div class="rows">
               <div class="row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="6" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 8.5v4M5 15.5v-3h14v3"/></svg>
@@ -1143,8 +1156,8 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
         <div class="block" data-panel="1">
           <div class="panel-copy">
             <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">02 &mdash; Build</span></div></div>
-            <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>This is where it takes form.</h3></div></div>
-            <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">The abstract becomes an experiment. You use the harness as a tool, or you build one. A workflow that runs. A skill you reverse-engineered from something you liked and rebuilt as your own. Attempt by attempt, the thing you were circling gets a body. This is the phase that decides what the design actually is, and the harness carries the engineering so you keep deciding.</p></div></div>
+            <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>The hands begin to move.</h3></div></div>
+            <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">Use AI to generate images, write code, test variations, and build small tools. You do not need to know everything before you begin.</p></div></div>
             <div class="rows">
               <div class="row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
@@ -1164,9 +1177,9 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
 
         <div class="block" data-panel="2">
           <div class="panel-copy">
-            <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">03 &mdash; Polish</span></div></div>
-            <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>This is where it ships.</h3></div></div>
-            <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">The experiments become a product. Rough edges get sanded. The parts that only worked in your hands start working in someone else's, until what you made is something you can sell. This is also the phase that faces outward: the live demo, in front of the client, with nothing standing between them and the work. What you show them is what they buy.</p></div></div>
+            <div class="fold" style="--stagger:0"><div class="fold-inner"><span class="panel-kicker">03 &mdash; Craft</span></div></div>
+            <div class="fold" style="--stagger:1"><div class="fold-inner"><h3>The work leaves the room.</h3></div></div>
+            <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="body">Polish the strongest direction into something you can show, share, publish, or use.</p></div></div>
             <div class="rows">
               <div class="row">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="14" r="4"/><path d="M12 12l8-8M18 4h3v3"/></svg>
@@ -1236,8 +1249,8 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
   <section class="dl" id="download">
     <div class="wrap">
       <div class="fold" style="--stagger:0"><div class="fold-inner"><div class="kicker">Download</div></div></div>
-      <div class="fold" style="--stagger:1"><div class="fold-inner"><h2>Get Mitsumeru for macOS.</h2></div></div>
-      <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="sub">Chosen by the chip in your Mac. The current release, read from the app repository.</p></div></div>
+      <div class="fold" style="--stagger:1"><div class="fold-inner"><h2>Enter the workshop.</h2></div></div>
+      <div class="fold" style="--stagger:2"><div class="fold-inner"><p class="sub">Download Mitsumeru for macOS and begin making with AI on your own machine.</p></div></div>
 
       <div class="facts fold" style="--stagger:3"><div class="fold-inner">
         <div class="facts">
