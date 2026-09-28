@@ -1961,6 +1961,11 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
     for (var i = 0; i < total; i++) {
       var dx = ox[i] - rx[i], dy = oy[i] - ry[i];
       if (dx * dx + dy * dy < SETTLED) continue;
+      // Erase the copy the cached field left at this dot's home before drawing it
+      // where it has actually got to. Without this the dot is on screen twice, once
+      // stuck at home and once drifting, the grid looks static while the cursor
+      // works, and the hole only appears later when the field is baked.
+      ctx.clearRect(rx[i] - DOT_R - 0.6, ry[i] - DOT_R - 0.6, DOT_R * 2 + 1.2, DOT_R * 2 + 1.2);
       ctx.moveTo(ox[i] + DOT_R, oy[i]);
       ctx.arc(ox[i], oy[i], DOT_R, 0, 6.2832);
       displaced++;
