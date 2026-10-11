@@ -280,3 +280,28 @@ you want when tuning the timeline. Call `refresh()` after anything moves the sec
 - Rendering pauses when the canvas scrolls out of view or the tab is hidden.
 - The scroll fade is skipped when the page does not scroll at all, so a single-screen page keeps its
   background.
+
+## Deploy (the live site)
+
+`index.html` is the page served at `https://mitsumeru.vercel.app` (project `mitsumeru`, team
+`muen2`); everything above documents the canvas modules that page uses.
+
+**A push does not deploy it.** The project is git-linked to this repo on `main`, but it does not
+build on push — measured 2026-10-11: commit `d5b4cdc` produced no deployment at all and no Vercel
+commit status, and production only moved when the CLI deployed. Two ways to ship a change:
+
+- `vercel --prod` from this directory (the CLI must be logged in; the project link is in `.vercel/`).
+- the project's `manual-deploy` deploy hook — ask for the URL rather than pasting it here, because
+  anyone holding it can deploy.
+
+**Bump the fallbacks in the same change.** The hero CTA, both build cards and the modal's primary
+button carry hand-written `releases/download/...` URLs for when the release fetch fails. They are the
+one thing here that goes stale in silence, and nothing else will tell you: the page's own fetch
+resolves the newest release at runtime (`RELEASES[0]` on `/releases?per_page=5`), so the live page
+can look completely right while the static fallback offers a build two cuts old. The Intel href is
+the plain `Mitsumeru-<version>.dmg`; a copy-paste that keeps the `-arm64` token makes that card
+serve the Apple Silicon file.
+
+`README.md`, `landing-*.md`, `preview.png`, `brand/mitsumeru-logo.svg` and the four slider preview
+pages are listed in `.vercelignore` and are not served; `.env*` and `.vercel/` are excluded by Vercel
+itself. Checked after the 2026-10-11 deploy — all of them answer 404.
