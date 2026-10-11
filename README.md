@@ -296,11 +296,28 @@ commit status, and production only moved when the CLI deployed. Two ways to ship
 
 **Bump the fallbacks in the same change.** The hero CTA, both build cards and the modal's primary
 button carry hand-written `releases/download/...` URLs for when the release fetch fails. They are the
-one thing here that goes stale in silence, and nothing else will tell you: the page's own fetch
-resolves the newest release at runtime (`RELEASES[0]` on `/releases?per_page=5`), so the live page
-can look completely right while the static fallback offers a build two cuts old. The Intel href is
-the plain `Mitsumeru-<version>.dmg`; a copy-paste that keeps the `-arm64` token makes that card
-serve the Apple Silicon file.
+one thing here that goes stale in silence, and nothing else will tell you. The Intel href is the
+plain `Mitsumeru-<version>.dmg`; a copy-paste that keeps the `-arm64` token makes that card serve the
+Apple Silicon file.
+
+**The featured build follows `releases/latest`, not the newest by date.** Those are two different
+definitions of "latest": the repo sidebar, the repo page and electron-updater's promoted channel all
+read the `releases/latest` pointer, while ordering by date also catches the `-dev` drills. Picking by
+date is what let this page advertise `0.2.5-dev` while the GitHub sidebar said `0.2.3` (measured
+2026-10-11). The page now fetches the pointer and moves that release to the front of `RELEASES`, so
+the site and GitHub are the same fact and cannot drift again.
+
+**Two traps when cutting a promoted release, both hit once on 2026-10-11:**
+
+- GitHub's Latest slot **cannot** hold a prerelease (`422 "Latest release cannot be draft or
+  prerelease."`), and that pointer is load-bearing: a promoted build resolves `releases/latest` and
+  then asks that release for `latest-mac.yml`. Point it at a `-dev` cut and every promoted install
+  gets `ERR_UPDATER_CHANNEL_FILE_NOT_FOUND`, because a `-dev` build publishes `dev-mac.yml`. The
+  version name IS the channel, so `-rc.1` would name a third channel (`rc-mac.yml`) and leave the
+  same gap. A promoted cut is a plain `0.x.y`.
+- `gh release upload "…exe#Mitsumeru-Setup-0.2.5.exe"` does **not** honour the rename: GitHub stores
+  the spaces as dots (`Mitsumeru.Setup.0.2.5.exe`) while the manifest asks for hyphens. Rename the
+  asset afterwards through the API, `PATCH /repos/:owner/:repo/releases/assets/:id` with `name`.
 
 `README.md`, `landing-*.md`, `preview.png`, `brand/mitsumeru-logo.svg` and the four slider preview
 pages are listed in `.vercelignore` and are not served; `.env*` and `.vercel/` are excluded by Vercel
