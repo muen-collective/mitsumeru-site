@@ -222,9 +222,17 @@ header a.gh:hover { color: var(--fg); }
 }
 .sound-toggle:hover { color: var(--fg); }
 
+@media (max-width: 700px) {
+  header a.gh.source { display: none; }
+  .muen-top-btn .long { display: none; }
+}
+
 @media (max-width: 600px) {
   header { padding: 14px 20px; }
   header a.gh .long { display: none; }
+  /* The hero carries the big download; the header keeps Muen + sound on the
+     top row instead of wrapping a third control onto its own line. */
+  #dlHeaderBtn { display: none; }
   .dl-header-btn { padding: 6px 11px; }
   .cx-model-chip { display: none; }
 }
@@ -999,7 +1007,8 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Download
     </button>
-    <a class="gh" href="https://github.com/muen-collective/mitsumeru-app" target="_blank" rel="noopener"><span class="long">Source on </span>GitHub</a>
+    <a class="dl-header-btn muen-top-btn" href="https://muen-site.vercel.app/" target="_blank" rel="noopener">Muen<span class="long"> Collective</span></a>
+    <a class="gh source" href="https://github.com/muen-collective/mitsumeru-app" target="_blank" rel="noopener"><span class="long">Source on </span>GitHub</a>
   </div>
   <button class="sound-toggle" id="soundToggle" aria-label="Toggle sound" title="Toggle sound">
     <svg class="icon-sound-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
@@ -1242,8 +1251,8 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
           <img src="assets/muen-collective-logo.svg" alt="Muen Collective" class="muen-logo-img" />
         </div>
         <p>Mitsumeru didn't start as a product.<br><br>It started because Muen &mdash; a UX and AI agency &mdash; kept hitting the same wall with every client: the tools were close, but the process was missing.<br><br>So we built the process. Then we built the tool to hold it.<br><br>Every skill, plugin, and prompt in Mitsumeru was made because a real project needed it. Nothing is speculative. Everything is scar tissue.<br><br>Muen Collective is the workshop. Mitsumeru is the workbench.</p>
-        <a class="muen-cta" id="muenBtn" href="https://muen-collective.com" target="_blank" rel="noopener">
-          <span class="muen-cta-text">Visit muen-collective.com</span>
+        <a class="muen-cta" id="muenBtn" href="https://muen-site.vercel.app/" target="_blank" rel="noopener">
+          <span class="muen-cta-text">Visit Muen Collective</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg>
         </a>
       </div></div>
@@ -1416,7 +1425,7 @@ footer { border-top: 1px solid var(--border); padding: 30px 0 42px; }
     var muenBtn = document.getElementById('muenBtn');
     if (muenBtn) {
       var muenBtnEl = mod.createScanButton({
-        label: 'Visit muen-collective.com',
+        label: 'Visit Muen Collective',
         variant: 'one',
         accentColor: '#05e8e0',
         lineColor: '#ffffff',
