@@ -307,6 +307,15 @@ date is what let this page advertise `0.2.5-dev` while the GitHub sidebar said `
 2026-10-11). The page now fetches the pointer and moves that release to the front of `RELEASES`, so
 the site and GitHub are the same fact and cannot drift again.
 
+**One exception: a drill that is out for testing** (2026-10-20). The pointer cannot hold a
+prerelease at all, so while a `-dev` cut is the thing testers must install, following the pointer
+hands them the last promoted build. The page therefore features `RELEASES[0]` when it is a
+**prerelease published after the pointer**, and keeps the promoted build directly behind it in the
+modal; a promoted release still wins over anything older. The drill is never unlabelled — the
+version cell prints the tag verbatim (`v0.2.6-dev`) and each card shows the asset's own name
+(`Mitsumeru-0.2.6-dev-arm64.dmg`). **When a drill is out, the static fallbacks must name the drill
+with its `-dev` asset names**, or the page and its own offline targets disagree.
+
 **Two traps when cutting a promoted release, both hit once on 2026-10-11:**
 
 - GitHub's Latest slot **cannot** hold a prerelease (`422 "Latest release cannot be draft or
